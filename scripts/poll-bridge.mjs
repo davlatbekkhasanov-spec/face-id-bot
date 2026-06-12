@@ -15,7 +15,10 @@ for (const line of fs.readFileSync(path.join(root, ".env"), "utf8").split(/\r?\n
 }
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const GROUP = process.env.GROUP_CHAT_ID;
+const GROUP =
+  process.env.NOTIFY_CHAT_ID ||
+  process.env.ADMIN_IDS?.split(/[,;]/)[0] ||
+  process.env.GROUP_CHAT_ID;
 const FACE_IP = process.env.FACE_DEVICE_IP || "192.168.0.28";
 const FACE_USER = process.env.FACE_DEVICE_USER || "admin";
 const FACE_PASS = process.env.FACE_DEVICE_PASSWORD;

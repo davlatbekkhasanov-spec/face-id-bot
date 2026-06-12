@@ -13,6 +13,9 @@ const STATE_FILE = path.join(DATA_DIR, "state.json");
 
 const BOT_TOKEN = (process.env.BOT_TOKEN || "").trim();
 const GROUP_CHAT_ID = String(process.env.GROUP_CHAT_ID || "-1001877019294").trim();
+const NOTIFY_CHAT_ID = String(
+  process.env.NOTIFY_CHAT_ID || process.env.ADMIN_IDS?.split(/[,;]/)[0] || GROUP_CHAT_ID
+).trim();
 const ADMIN_IDS = new Set(
   (process.env.ADMIN_IDS || "1432810519")
     .split(/[,;]/)
@@ -106,7 +109,7 @@ async function notifyEvent(ev) {
   const icon = isIn(ev) ? "📥" : "📤";
   const action = isIn(ev) ? "keldi" : "ketdi";
   const text = `${icon} <b>${name}</b> ${action} — <b>${time}</b>`;
-  await send(GROUP_CHAT_ID, text);
+  await send(NOTIFY_CHAT_ID, text);
 }
 
 async function processEvent(ev) {
@@ -322,10 +325,10 @@ async function pollTelegram(offset) {
 async function main() {
   startHttpServer();
   const me = await tg("getMe");
-  console.log(`Face ID bot @${me.username} | face=${FACE_IP} | group=${GROUP_CHAT_ID}`);
+  console.log(`Face ID bot @${me.username} | face=${FACE_IP} | notify=${NOTIFY_CHAT_ID}`);
   await send(
-    GROUP_CHAT_ID,
-    `🟢 <b>Face ID bot ishga tushdi</b>\n@${me.username}\nWebhook rejimi`
+    NOTIFY_CHAT_ID,
+    `🟢 <b>Face ID bot ishga tushdi</b> (test rejimi — lichka)\n@${me.username}`
   ).catch(() => {});
 
   let offset = 0;
