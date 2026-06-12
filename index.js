@@ -16,10 +16,13 @@ import {
   loadRegistration,
   afterPhoto,
   currentEmployee,
+  askMessage,
 } from "./lib/register-wizard.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
+const DATA_DIR =
+  process.env.DATA_DIR || process.env.DATABASE_DIR || path.join(__dirname, "data");
+const TELEGRAM_POLL = String(process.env.TELEGRAM_POLL ?? "1") !== "0";
 const employees = loadEmployees(DATA_DIR);
 initDb(DATA_DIR);
 
@@ -342,16 +345,34 @@ async function pollTelegram(offset) {
   return next;
 }
 
+async function bootRegistration() {
+  const reg = loadRegistration(DATA_DIR);
+  if (!reg.active || !reg.awaitingPhoto) return;
+  const emp = currentEmployee(DATA_DIR);
+  if (!emp) return;
+  const total = reg.total || Object.keys(employees.staff || {}).length;
+  const done = reg.done || 0;
+  await send(NOTIFY_CHAT_ID, askMessage(emp, done + 1, total));
+}
+
 async function main() {
   startHttpServer();
   const me = await tg("getMe");
-  console.log(`Face ID bot @${me.username} | face=${FACE_IP} | notify=${NOTIFY_CHAT_ID}`);
+  console.log(
+    `Face ID bot @${me.username} | face=${FACE_IP} | notify=${NOTIFY_CHAT_ID} | tgPoll=${TELEGRAM_POLL}`
+  );
+  if (TELEGRAM_POLL) await bootRegistration();
 
   let offset = 0;
   let lastPoll = 0;
   let lastMonthCheck = 0;
   for (;;) {
-    const tasks = [pollTelegram(offset).then((o) => (offset = o))];
+    const tasks = [];
+    if (TELEGRAM_POLL) {
+      tasks.push(pollTelegram(offset).then((o) => (offset = o)));
+    } else {
+      await new Promise((r) => setTimeout(r, 2000));
+    }
     const now = Date.now();
     if (now - lastMonthCheck >= 3600_000) {
       lastMonthCheck = now;
