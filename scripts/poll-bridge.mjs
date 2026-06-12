@@ -1,5 +1,5 @@
 /**
- * Do'kon LAN: terminal → SQLite DB → Telegram lichka.
+ * Do'kon LAN: terminal → SQLite DB → Telegram guruh (foto + statistika).
  */
 import fs from "fs";
 import path from "path";
@@ -22,27 +22,28 @@ initDb(process.env.DATABASE_DIR || dataDir);
 const employees = loadEmployees(dataDir);
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const CHAT =
-  process.env.NOTIFY_CHAT_ID ||
-  process.env.ADMIN_IDS?.split(/[,;]/)[0] ||
-  process.env.GROUP_CHAT_ID;
+const GROUP_CHAT_ID = process.env.GROUP_CHAT_ID;
+const NOTIFY_CHAT_ID = process.env.NOTIFY_CHAT_ID;
+const ATTENDANCE_TO_GROUP = String(process.env.ATTENDANCE_TO_GROUP ?? "1") !== "0";
+const ATTENDANCE_TO_DM = String(process.env.ATTENDANCE_TO_DM ?? "0") === "1";
 const FACE_IP = process.env.FACE_DEVICE_IP || "192.168.0.28";
 const FACE_USER = process.env.FACE_DEVICE_USER || "admin";
 const FACE_PASS = process.env.FACE_DEVICE_PASSWORD;
-const POLL = Math.max(20, Number(process.env.POLL_INTERVAL_SEC || 25));
+const POLL = Math.max(5, Number(process.env.POLL_INTERVAL_SEC || 5));
 const TZ = process.env.FACE_TIMEZONE || "+05:00";
 
-async function tg(text) {
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: CHAT, text, parse_mode: "HTML" }),
-  });
-}
+const ctx = {
+  botToken: BOT_TOKEN,
+  dataDir: process.env.DATABASE_DIR || dataDir,
+  groupChatId: ATTENDANCE_TO_GROUP ? GROUP_CHAT_ID : null,
+  notifyChatId: ATTENDANCE_TO_DM ? NOTIFY_CHAT_ID : null,
+};
 
 function today() {
   const d = new Date();
-  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
+  const y = d.getFullYear(),
+    m = String(d.getMonth() + 1).padStart(2, "0"),
+    day = String(d.getDate()).padStart(2, "0");
   return { start: `${y}-${m}-${day}T00:00:00${TZ}`, end: `${y}-${m}-${day}T23:59:59${TZ}` };
 }
 
@@ -54,8 +55,14 @@ async function fetchEvents() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       AcsEventCond: {
-        searchID: "1", searchResultPosition: 0, maxResults: 40, major: 0, minor: 0,
-        startTime: start, endTime: end, timeReverseOrder: true,
+        searchID: "1",
+        searchResultPosition: 0,
+        maxResults: 40,
+        major: 0,
+        minor: 0,
+        startTime: start,
+        endTime: end,
+        timeReverseOrder: true,
       },
     }),
   });
@@ -63,13 +70,13 @@ async function fetchEvents() {
   return list ? (Array.isArray(list) ? list : [list]) : [];
 }
 
-console.log(`Poll bridge → DB → lichka ${CHAT}`);
+console.log(`Poll bridge → guruh ${GROUP_CHAT_ID} | poll=${POLL}s`);
 
 for (;;) {
   try {
     const events = await fetchEvents();
     for (const ev of events.reverse()) {
-      await handleFaceEvent(ev, employees, tg);
+      await handleFaceEvent(ev, employees, ctx);
     }
   } catch (e) {
     console.warn(e.message);

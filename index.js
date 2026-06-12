@@ -102,8 +102,20 @@ function empName(ev) {
   ).toString().trim();
 }
 
+const ATTENDANCE_TO_GROUP = String(process.env.ATTENDANCE_TO_GROUP ?? "1") !== "0";
+const ATTENDANCE_TO_DM = String(process.env.ATTENDANCE_TO_DM ?? "0") === "1";
+
+function attendanceCtx() {
+  return {
+    botToken: BOT_TOKEN,
+    dataDir: DATA_DIR,
+    groupChatId: ATTENDANCE_TO_GROUP ? GROUP_CHAT_ID : null,
+    notifyChatId: ATTENDANCE_TO_DM ? NOTIFY_CHAT_ID : null,
+  };
+}
+
 async function processEvent(ev) {
-  return handleFaceEvent(ev, employees, (msg) => send(NOTIFY_CHAT_ID, msg));
+  return handleFaceEvent(ev, employees, attendanceCtx());
 }
 
 async function maybeCloseMonth() {
