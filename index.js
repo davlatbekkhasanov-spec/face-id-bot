@@ -199,7 +199,7 @@ async function handleUpdate(upd) {
     }
     const { start, end } = todayRange();
     try {
-      const raw = await curlAcsEvents(start, end);
+      const raw = await fetchAcsEvents(start, end);
       const events = parseEvents(raw);
       if (!events.length) return send(chatId, "Bugun hodisa yo'q yoki ulanish xato.");
       const lines = events.slice(0, 20).map((ev) => {
