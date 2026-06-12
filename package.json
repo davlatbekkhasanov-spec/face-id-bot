@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "local": "node scripts/start-local.mjs",
+    "reset": "node scripts/reset-all.mjs",
     "postinstall": "playwright install chromium",
     "find": "node scripts/find-face.mjs",
     "test-device": "node scripts/test-device.mjs"

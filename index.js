@@ -48,9 +48,16 @@ loadEnvFile();
 
 const DATA_DIR =
   process.env.DATA_DIR || process.env.DATABASE_DIR || path.join(__dirname, "data");
-const ON_RAILWAY = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
-const TELEGRAM_POLL =
-  String(process.env.TELEGRAM_POLL ?? (ON_RAILWAY ? "0" : "1")) !== "0";
+const ON_RAILWAY = Boolean(
+  process.env.RAILWAY_ENVIRONMENT ||
+    process.env.RAILWAY_PROJECT_ID ||
+    process.env.RAILWAY_SERVICE_ID ||
+    process.env.RAILWAY_REPLICA_ID
+);
+/** Railway faqat webhook; Telegram buyruqlari do'kondagi index.js da */
+const TELEGRAM_POLL = ON_RAILWAY
+  ? false
+  : String(process.env.TELEGRAM_POLL ?? "1") !== "0";
 const employees = loadEmployees(DATA_DIR);
 initDb(DATA_DIR);
 
@@ -73,8 +80,9 @@ const POLL_SEC = Math.max(10, Number(process.env.POLL_INTERVAL_SEC || 25));
 const TZ_OFFSET = (process.env.FACE_TIMEZONE || "+05:00").trim();
 const PORT = Number(process.env.PORT || 8080);
 const WEBHOOK_PATH = (process.env.WEBHOOK_PATH || "/webhook/hikvision").trim();
-const USE_POLL =
-  String(process.env.USE_POLL ?? (ON_RAILWAY ? "0" : "1")) === "1";
+const USE_POLL = ON_RAILWAY
+  ? false
+  : String(process.env.USE_POLL ?? "1") === "1";
 
 if (!BOT_TOKEN) {
   console.error("BOT_TOKEN yo'q");
@@ -417,6 +425,13 @@ async function handleUpdate(upd) {
     return send(chatId, info);
   }
 
+  if (text === "/reset" && isAdmin) {
+    const { resetAllAttendance } = await import("./lib/db.mjs");
+    resetAllAttendance();
+    const lc = path.join(DATA_DIR, "last-card.json");
+    if (fs.existsSync(lc)) fs.unlinkSync(lc);
+    return send(chatId, "✅ Barcha davomat ma'lumotlari o'chirildi. 0 dan boshlandi.");
+  }
   if (text === "/hisobot" && isAdmin) {
     const r = await sendStoredCard(DATA_DIR, BOT_TOKEN, chatId, employees);
     if (!r.ok) return send(chatId, `⚠️ ${r.error}`);
