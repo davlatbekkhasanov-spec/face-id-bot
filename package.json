@@ -10,6 +10,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "digest-fetch": "^2.0.3"
+    "digest-fetch": "^2.0.3",
+    "node-fetch": "^2.7.0"
   }
 }
