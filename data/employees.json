@@ -12,70 +12,80 @@
       "lastName": "Yadullaev",
       "deviceName": "YADULLAEV UMID",
       "telegramId": 924612402,
-      "faceRegistered": false
+      "faceRegistered": true,
+      "photoFile": "faces/924612402.jpg"
     },
     "5412958249": {
       "firstName": "Oxunjon",
       "lastName": "Ravshanov",
       "deviceName": "RAVSHANOV OXUNJON",
       "telegramId": 5412958249,
-      "faceRegistered": false
+      "faceRegistered": true,
+      "photoFile": "faces/5412958249.jpg"
     },
     "8547365654": {
       "firstName": "Sindor",
       "lastName": "Ruziboev",
       "deviceName": "RUZIBOEV SINDOR",
       "telegramId": 8547365654,
-      "faceRegistered": false
+      "faceRegistered": true,
+      "photoFile": "faces/8547365654.jpg"
     },
     "6931958983": {
       "firstName": "Abdullo",
       "lastName": "Mustafoev",
       "deviceName": "MUSTAFOEV ABDULLO",
       "telegramId": 6931958983,
-      "faceRegistered": false
+      "faceRegistered": true,
+      "photoFile": "faces/6931958983.jpg"
     },
     "6991673998": {
       "firstName": "Yunus",
       "lastName": "Sagdullaev",
       "deviceName": "SAGDULLAEV YUNUS",
       "telegramId": 6991673998,
-      "faceRegistered": false
+      "faceRegistered": true,
+      "photoFile": "faces/6991673998.jpg"
     },
     "5465963344": {
       "firstName": "Tolib",
       "lastName": "Shernazarov",
       "deviceName": "SHERNAZAROV TOLIB",
       "telegramId": 5465963344,
-      "faceRegistered": false
+      "faceRegistered": true,
+      "photoFile": "faces/5465963344.jpg"
     },
     "6001619806": {
       "firstName": "Tulqin",
       "lastName": "Samadov",
       "deviceName": "SAMADOV TULQIN",
       "telegramId": 6001619806,
-      "faceRegistered": false
+      "faceRegistered": true,
+      "photoFile": "faces/6001619806.jpg"
     },
     "5732350707": {
       "firstName": "Muslimbek",
       "lastName": "Toxirov",
       "deviceName": "TOXIROV MUSLIMBEK",
       "telegramId": 5732350707,
-      "faceRegistered": false
+      "faceRegistered": true,
+      "photoFile": "faces/5732350707.jpg"
     },
     "8440127425": {
       "firstName": "Ziyodullo",
       "lastName": "Ravshanov",
       "deviceName": "RAVSHANOV ZIYODULLO",
       "telegramId": 8440127425,
-      "faceRegistered": false
+      "faceRegistered": true,
+      "photoFile": "faces/8440127425.jpg"
     },
     "7703650930": {
       "firstName": "Farrux",
       "lastName": "Tuvalov",
       "deviceName": "TUVALOV FARRUX",
       "telegramId": 7703650930,
-      "faceRegistered": false
+      "faceRegistered": true,
+      "photoFile": "faces/7703650930.jpg"
     }
   }
 }

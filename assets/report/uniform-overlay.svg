@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 520" width="520" height="520">
+  <defs>
+    <linearGradient id="jacket" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4a5f2e"/>
+      <stop offset="55%" stop-color="#3d4f26"/>
+      <stop offset="100%" stop-color="#2a3618"/>
+    </linearGradient>
+    <linearGradient id="lapel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5a7038"/>
+      <stop offset="100%" stop-color="#354520"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0d878"/>
+      <stop offset="50%" stop-color="#c9a227"/>
+      <stop offset="100%" stop-color="#8b6914"/>
+    </linearGradient>
+    <linearGradient id="cap" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3d4f26"/>
+      <stop offset="100%" stop-color="#1e2810"/>
+    </linearGradient>
+  </defs>
+
+  <!-- peaked cap — yuqorida, yuzni qoplamaydi -->
+  <ellipse cx="260" cy="36" rx="100" ry="22" fill="#1e2810" opacity="0.92"/>
+  <path d="M160 36 Q260 -6 360 36 L360 48 Q260 22 160 48 Z" fill="url(#cap)"/>
+  <ellipse cx="260" cy="48" rx="92" ry="11" fill="#2a3618"/>
+  <rect x="252" y="4" width="16" height="32" rx="3" fill="url(#gold)" opacity="0.85"/>
+
+  <!-- shoulder epaulettes -->
+  <ellipse cx="58" cy="348" rx="50" ry="20" fill="url(#lapel)" opacity="0.9"/>
+  <ellipse cx="462" cy="348" rx="50" ry="20" fill="url(#lapel)" opacity="0.9"/>
+  <rect x="26" y="338" width="64" height="7" rx="2" fill="url(#gold)"/>
+  <rect x="430" y="338" width="64" height="7" rx="2" fill="url(#gold)"/>
+  <circle cx="58" cy="332" r="6" fill="url(#gold)"/>
+  <circle cx="462" cy="332" r="6" fill="url(#gold)"/>
+
+  <!-- jacket -->
+  <path d="M0 370 L0 520 L520 520 L520 370 Q400 332 260 348 Q120 332 0 370 Z" fill="url(#jacket)" opacity="0.94"/>
+
+  <!-- collar -->
+  <path d="M260 348 L200 408 L218 418 L260 372 L302 418 L320 408 Z" fill="#2a3618" opacity="0.82"/>
+  <path d="M218 418 L260 372 L302 418 L260 444 Z" fill="#f5f0e0" opacity="0.9"/>
+
+  <!-- lapels -->
+  <path d="M200 408 L130 520 L182 520 L236 420 Z" fill="url(#lapel)" opacity="0.88"/>
+  <path d="M320 408 L390 520 L338 520 L284 420 Z" fill="url(#lapel)" opacity="0.88"/>
+
+  <!-- buttons -->
+  <circle cx="260" cy="462" r="8" fill="url(#gold)"/>
+  <circle cx="260" cy="490" r="8" fill="url(#gold)"/>
+  <circle cx="260" cy="514" r="8" fill="url(#gold)"/>
+
+  <!-- tie -->
+  <path d="M250 372 L260 444 L270 372 L260 360 Z" fill="#1a2810" opacity="0.7"/>
+
+  <!-- rank star -->
+  <polygon points="260,382 263,390 272,390 265,395 268,404 260,398 252,404 255,395 248,390 257,390" fill="url(#gold)"/>
+</svg>
