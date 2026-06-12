@@ -1,5 +1,5 @@
 /**
- * Do'kon LAN: terminal → SQLite DB → Telegram guruh (foto + statistika).
+ * Do'kon LAN: terminal → SQLite DB → saqlash (avtomatik yuborish YO'Q)
  */
 import fs from "fs";
 import path from "path";
@@ -23,10 +23,6 @@ initDb(process.env.DATABASE_DIR || dataDir);
 const employees = loadEmployees(dataDir);
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const GROUP_CHAT_ID = process.env.GROUP_CHAT_ID;
-const NOTIFY_CHAT_ID = process.env.NOTIFY_CHAT_ID;
-const ATTENDANCE_TO_GROUP = String(process.env.ATTENDANCE_TO_GROUP ?? "0") === "1";
-const ATTENDANCE_TO_DM = String(process.env.ATTENDANCE_TO_DM ?? "1") !== "0";
 const FACE_IP = process.env.FACE_DEVICE_IP || "192.168.0.28";
 const FACE_USER = process.env.FACE_DEVICE_USER || "admin";
 const FACE_PASS = process.env.FACE_DEVICE_PASSWORD;
@@ -36,9 +32,6 @@ const TZ = process.env.FACE_TIMEZONE || "+05:00";
 const ctx = {
   botToken: BOT_TOKEN,
   dataDir: process.env.DATABASE_DIR || dataDir,
-  notifyChatId: ATTENDANCE_TO_DM ? NOTIFY_CHAT_ID : null,
-  groupChatId: ATTENDANCE_TO_GROUP ? GROUP_CHAT_ID : null,
-  autoSend: String(process.env.AUTO_SEND_ATTENDANCE ?? "0") === "1",
 };
 
 function today() {
@@ -72,8 +65,7 @@ async function fetchEvents() {
   return list ? (Array.isArray(list) ? list : [list]) : [];
 }
 
-const dest = ctx.notifyChatId || ctx.groupChatId || "?";
-console.log(`Poll bridge → saqlash rejimi | poll=${POLL}s | autoSend=${ctx.autoSend}`);
+console.log("Poll bridge → faqat saqlash | poll=" + POLL + "s");
 
 async function tgSend(chatId, text) {
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {

@@ -125,17 +125,10 @@ function empName(ev) {
   ).toString().trim();
 }
 
-const ATTENDANCE_TO_GROUP = String(process.env.ATTENDANCE_TO_GROUP ?? "0") === "1";
-const ATTENDANCE_TO_DM = String(process.env.ATTENDANCE_TO_DM ?? "1") !== "0";
-const AUTO_SEND = String(process.env.AUTO_SEND_ATTENDANCE ?? "0") === "1";
-
 function attendanceCtx() {
   return {
     botToken: BOT_TOKEN,
     dataDir: DATA_DIR,
-    notifyChatId: ATTENDANCE_TO_DM ? NOTIFY_CHAT_ID : null,
-    groupChatId: ATTENDANCE_TO_GROUP ? GROUP_CHAT_ID : null,
-    autoSend: AUTO_SEND,
   };
 }
 
