@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "find": "node scripts/find-face.mjs",
+    "test-device": "node scripts/test-device.mjs"
   },
   "engines": {
     "node": ">=20"
