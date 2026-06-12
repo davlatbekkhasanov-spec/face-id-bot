@@ -1,7 +1,8 @@
 /**
- * Face ID bot — Hikvision kelish/ketish → Telegram
+ * Face ID bot — Hikvision webhook/poll → Telegram
  */
 import fs from "fs";
+import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import DigestFetch from "digest-fetch";
@@ -24,6 +25,9 @@ const FACE_USER = (process.env.FACE_DEVICE_USER || "admin").trim();
 const FACE_PASS = (process.env.FACE_DEVICE_PASSWORD || "").trim();
 const POLL_SEC = Math.max(10, Number(process.env.POLL_INTERVAL_SEC || 25));
 const TZ_OFFSET = (process.env.FACE_TIMEZONE || "+05:00").trim();
+const PORT = Number(process.env.PORT || 8080);
+const WEBHOOK_PATH = (process.env.WEBHOOK_PATH || "/webhook/hikvision").trim();
+const USE_POLL = String(process.env.USE_POLL || "0") === "1";
 
 if (!BOT_TOKEN) {
   console.error("BOT_TOKEN yo'q");
@@ -36,7 +40,7 @@ function loadState() {
   try {
     return JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
   } catch {
-    return { lastSerial: 0, seen: {}, watchlist: {} };
+    return { lastSerial: 0, seen: {} };
   }
 }
 
@@ -52,7 +56,6 @@ function todayRange() {
   return {
     start: `${y}-${m}-${day}T00:00:00${TZ_OFFSET}`,
     end: `${y}-${m}-${day}T23:59:59${TZ_OFFSET}`,
-    key: `${y}-${m}-${day}`,
   };
 }
 
@@ -69,6 +72,112 @@ async function tg(method, body = {}) {
 
 async function send(chatId, text, extra = {}) {
   return tg("sendMessage", { chat_id: chatId, text, parse_mode: "HTML", ...extra });
+}
+
+function empName(ev) {
+  return (
+    ev.name ||
+    ev.employeeNoString ||
+    ev.employeeNo ||
+    ev.cardNo ||
+    "Noma'lum"
+  ).toString();
+}
+
+function isIn(ev) {
+  const t = String(ev.attendanceStatus || ev.label || ev.minor || ev.subEventType || "").toLowerCase();
+  if (t.includes("out") || t.includes("check out") || t === "2" || t.includes("checkout")) return false;
+  return true;
+}
+
+function eventKey(ev) {
+  return `${ev.serialNo || ev.time || ev.dateTime || ""}_${empName(ev)}_${isIn(ev) ? "in" : "out"}`;
+}
+
+function fmtTime(ev) {
+  const t = String(ev.time || ev.dateTime || "");
+  const m = t.match(/T(\d{2}:\d{2}:\d{2})/);
+  return m ? m[1].slice(0, 5) : t.slice(11, 16) || "—";
+}
+
+async function notifyEvent(ev) {
+  const name = empName(ev);
+  const time = fmtTime(ev);
+  const icon = isIn(ev) ? "📥" : "📤";
+  const action = isIn(ev) ? "keldi" : "ketdi";
+  const text = `${icon} <b>${name}</b> ${action} — <b>${time}</b>`;
+  await send(GROUP_CHAT_ID, text);
+}
+
+async function processEvent(ev) {
+  const state = loadState();
+  const k = eventKey(ev);
+  if (state.seen[k]) return false;
+  state.seen[k] = true;
+  const serial = Number(ev.serialNo || 0);
+  if (serial > (state.lastSerial || 0)) state.lastSerial = serial;
+  saveState(state);
+  await notifyEvent(ev);
+  return true;
+}
+
+function xmlTag(xml, tag) {
+  const m = xml.match(new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`, "i"));
+  return m ? m[1].trim() : "";
+}
+
+function parseWebhookBody(raw) {
+  if (!raw || !raw.includes("AccessControllerEvent") && !raw.includes("employeeName")) {
+    return null;
+  }
+  const block = raw.includes("AccessControllerEvent")
+    ? raw.match(/<AccessControllerEvent[\s\S]*?<\/AccessControllerEvent>/i)?.[0] || raw
+    : raw;
+  const ev = {
+    name: xmlTag(block, "employeeName") || xmlTag(block, "name"),
+    employeeNoString: xmlTag(block, "employeeNoString") || xmlTag(block, "employeeNo"),
+    dateTime: xmlTag(block, "dateTime") || xmlTag(block, "time"),
+    minor: xmlTag(block, "minor") || xmlTag(block, "subEventType"),
+    label: xmlTag(block, "label"),
+    attendanceStatus: xmlTag(block, "attendanceStatus"),
+    serialNo: xmlTag(block, "serialNo"),
+  };
+  if (!ev.name && !ev.employeeNoString) return null;
+  ev.time = ev.dateTime;
+  return ev;
+}
+
+async function handleWebhook(req, res) {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const raw = Buffer.concat(chunks).toString("utf8");
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("OK");
+  try {
+    const ev = parseWebhookBody(raw);
+    if (!ev) return;
+    const ok = await processEvent(ev);
+    if (ok) console.log(`Webhook: ${empName(ev)} ${isIn(ev) ? "keldi" : "ketdi"}`);
+  } catch (e) {
+    console.warn("Webhook:", e.message);
+  }
+}
+
+function startHttpServer() {
+  const server = http.createServer(async (req, res) => {
+    if (req.method === "GET" && (req.url === "/health" || req.url === "/")) {
+      res.writeHead(200, { "Content-Type": "text/plain" });
+      return res.end("face-id-bot ok");
+    }
+    if (req.method === "POST" && req.url === WEBHOOK_PATH) {
+      return handleWebhook(req, res);
+    }
+    res.writeHead(404);
+    res.end("not found");
+  });
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`HTTP :${PORT} webhook=${WEBHOOK_PATH}`);
+  });
 }
 
 async function fetchAcsEvents(start, end) {
@@ -110,44 +219,9 @@ function parseEvents(raw) {
   }
 }
 
-function empName(ev) {
-  return (
-    ev.name ||
-    ev.employeeNoString ||
-    ev.employeeNo ||
-    ev.cardNo ||
-    "Noma'lum"
-  ).toString();
-}
-
-function isIn(ev) {
-  const t = String(ev.attendanceStatus || ev.doorNo || ev.minor || "").toLowerCase();
-  if (t.includes("out") || t.includes("check out") || t === "2") return false;
-  return true;
-}
-
-function eventKey(ev) {
-  return `${ev.serialNo || ev.time || ""}_${empName(ev)}`;
-}
-
-function fmtTime(ev) {
-  const t = String(ev.time || "");
-  const m = t.match(/T(\d{2}:\d{2}:\d{2})/);
-  return m ? m[1].slice(0, 5) : t.slice(11, 16) || "—";
-}
-
-async function notifyEvent(ev) {
-  const name = empName(ev);
-  const time = fmtTime(ev);
-  const icon = isIn(ev) ? "📥" : "📤";
-  const action = isIn(ev) ? "keldi" : "ketdi";
-  const text = `${icon} <b>${name}</b> ${action} — <b>${time}</b>`;
-  await send(GROUP_CHAT_ID, text);
-}
-
 async function pollFace() {
   if (!FACE_PASS) return;
-  const { start, end, key } = todayRange();
+  const { start, end } = todayRange();
   let raw;
   try {
     raw = await fetchAcsEvents(start, end);
@@ -155,26 +229,14 @@ async function pollFace() {
     console.warn("Face poll:", e.message);
     return;
   }
-  if (raw.includes("401") || raw.includes("Unauthorized")) {
-    console.warn("Face ID: parol noto'g'ri (401)");
-    return;
-  }
   const events = parseEvents(raw).reverse();
-  const state = loadState();
   for (const ev of events) {
-    const serial = Number(ev.serialNo || 0);
-    const k = eventKey(ev);
-    if (state.seen[k]) continue;
-    if (serial && serial <= (state.lastSerial || 0)) continue;
-    state.seen[k] = true;
-    if (serial > (state.lastSerial || 0)) state.lastSerial = serial;
     try {
-      await notifyEvent(ev);
+      await processEvent(ev);
     } catch (e) {
       console.warn("Notify:", e.message);
     }
   }
-  saveState(state);
 }
 
 async function handleUpdate(upd) {
@@ -187,7 +249,7 @@ async function handleUpdate(upd) {
   if (text === "/start") {
     return send(
       chatId,
-      "👋 <b>Face ID bot</b>\n\nHikvision terminaldan kelish/ketish xabarlari shu guruhga boradi.\n\n/bugin — bugungi holat\n/id — sizning ID"
+      "👋 <b>Face ID bot</b>\n\nKelish/ketish xabarlari shu guruhga boradi.\n\n/bugun — bugungi holat\n/id — sizning ID"
     );
   }
   if (text === "/id") {
@@ -195,7 +257,7 @@ async function handleUpdate(upd) {
   }
   if (text === "/bugun" || text === "/hozir") {
     if (!FACE_PASS) {
-      return send(chatId, "⚠️ FACE_DEVICE_PASSWORD Railway da sozlanmagan.");
+      return send(chatId, "⚠️ FACE_DEVICE_PASSWORD sozlanmagan.");
     }
     const { start, end } = todayRange();
     try {
@@ -215,7 +277,7 @@ async function handleUpdate(upd) {
     const me = await tg("getMe");
     return send(
       chatId,
-      `✅ @${me.username}\nFace: <code>${FACE_IP}</code>\nGuruh: <code>${GROUP_CHAT_ID}</code>\nPoll: ${POLL_SEC}s`
+      `✅ @${me.username}\nFace: <code>${FACE_IP}</code>\nGuruh: <code>${GROUP_CHAT_ID}</code>\nWebhook: <code>${WEBHOOK_PATH}</code>\nPoll: ${USE_POLL ? `${POLL_SEC}s` : "off"}`
     );
   }
 }
@@ -235,21 +297,24 @@ async function pollTelegram(offset) {
 }
 
 async function main() {
+  startHttpServer();
   const me = await tg("getMe");
   console.log(`Face ID bot @${me.username} | face=${FACE_IP} | group=${GROUP_CHAT_ID}`);
   await send(
     GROUP_CHAT_ID,
-    `🟢 <b>Face ID bot ishga tushdi</b>\n@${me.username}`
+    `🟢 <b>Face ID bot ishga tushdi</b>\n@${me.username}\nWebhook rejimi`
   ).catch(() => {});
 
   let offset = 0;
   let lastPoll = 0;
   for (;;) {
     const tasks = [pollTelegram(offset).then((o) => (offset = o))];
-    const now = Date.now();
-    if (now - lastPoll >= POLL_SEC * 1000) {
-      lastPoll = now;
-      tasks.push(pollFace());
+    if (USE_POLL && FACE_PASS) {
+      const now = Date.now();
+      if (now - lastPoll >= POLL_SEC * 1000) {
+        lastPoll = now;
+        tasks.push(pollFace());
+      }
     }
     await Promise.all(tasks);
   }
