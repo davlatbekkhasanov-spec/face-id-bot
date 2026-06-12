@@ -35,7 +35,6 @@ import {
 } from "./lib/bot-handlers.mjs";
 import { staffKeyByTelegramId } from "./lib/access.mjs";
 import { checkShiftReminders } from "./lib/reminders.mjs";
-import { sendStoredCard } from "./lib/process-event.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -158,6 +157,7 @@ function attendanceCtx() {
   return {
     botToken: BOT_TOKEN,
     dataDir: DATA_DIR,
+    groupChatId: GROUP_CHAT_ID,
     pollWatermarkMs: getPollWatermarkMs(),
   };
 }
@@ -168,6 +168,7 @@ function botCtx() {
     dataDir: DATA_DIR,
     employees,
     adminIds: ADMIN_IDS,
+    groupChatId: GROUP_CHAT_ID,
     notifyChatId: NOTIFY_CHAT_ID,
     tgAnswer: (id, text) => tg("answerCallbackQuery", { callback_query_id: id, text: text || "" }),
     tgSend: (chatId, text, extra = {}) => send(chatId, text, extra),
@@ -461,9 +462,7 @@ async function handleUpdate(upd) {
     return send(chatId, "✅ Barcha ma'lumotlar o'chirildi. Faqat yangi skaner ishlaydi.");
   }
   if (text === "/hisobot" && isAdmin) {
-    const r = await sendStoredCard(DATA_DIR, BOT_TOKEN, chatId, employees);
-    if (!r.ok) return send(chatId, `⚠️ ${r.error}`);
-    return send(chatId, "✅ Oxirgi hisobot yuborildi.");
+    return send(chatId, "ℹ️ Hisobotlar avtomatik <b>guruhga</b> ketadi. Face ID dan o'ting.");
   }
   if (text === "/hodim" && ADMIN_IDS.has(uid)) {
     const r = startWizard(DATA_DIR);
