@@ -4,4 +4,6 @@ node_modules/
 !.env.example
 data/bridge-state.json
 data/state.json
+data/faceid.db
+data/faceid.db-*
 *.log

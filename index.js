@@ -6,17 +6,16 @@ import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import DigestFetch from "digest-fetch";
-import {
-  isFaceEvent,
-  loadEmployees,
-  buildMessage,
-  fmtClock,
-} from "./lib/attendance.mjs";
+import { isFaceEvent, loadEmployees, fmtClock } from "./lib/attendance.mjs";
+import { initDb, shouldRunMonthClose, closePeriod, setMeta } from "./lib/db.mjs";
+import { handleFaceEvent } from "./lib/process-event.mjs";
+import { buildMonthlyReport } from "./lib/report.mjs";
+import { periodKey } from "./lib/period.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const employees = loadEmployees(DATA_DIR);
-const STATE_FILE = path.join(DATA_DIR, "state.json");
+initDb(DATA_DIR);
 
 const BOT_TOKEN = (process.env.BOT_TOKEN || "").trim();
 const GROUP_CHAT_ID = String(process.env.GROUP_CHAT_ID || "-1001877019294").trim();
@@ -45,18 +44,6 @@ if (!BOT_TOKEN) {
 }
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
-
-function loadState() {
-  try {
-    return JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
-  } catch {
-    return { lastSerial: 0, staff: {} };
-  }
-}
-
-function saveState(state) {
-  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
-}
 
 function todayRange() {
   const d = new Date();
@@ -95,16 +82,17 @@ function empName(ev) {
 }
 
 async function processEvent(ev) {
-  if (!isFaceEvent(ev)) return false;
-  const state = loadState();
-  const serial = Number(ev.serialNo || 0);
-  if (serial && serial <= (state.lastSerial || 0)) return false;
-  const msg = buildMessage(ev, state, employees);
-  if (serial > (state.lastSerial || 0)) state.lastSerial = serial;
-  saveState(state);
-  if (!msg) return false;
-  await send(NOTIFY_CHAT_ID, msg);
-  return true;
+  return handleFaceEvent(ev, employees, (msg) => send(NOTIFY_CHAT_ID, msg));
+}
+
+async function maybeCloseMonth() {
+  const pk = shouldRunMonthClose();
+  if (!pk) return;
+  const report = buildMonthlyReport(pk, "📅 Oy yopildi (2-sana)");
+  await send(GROUP_CHAT_ID, report);
+  closePeriod(pk);
+  setMeta(`close_sent_${pk}`, "1");
+  console.log("Month closed:", pk);
 }
 
 function xmlTag(xml, tag) {
@@ -258,8 +246,12 @@ async function handleUpdate(upd) {
   if (text === "/start") {
     return send(
       chatId,
-      "👋 <b>Face ID bot</b>\n\nKelish/ketish xabarlari shu guruhga boradi.\n\n/bugun — bugungi holat\n/id — sizning ID"
+      "👋 <b>Face ID Hisobot</b>\n\n/jadval — oylik jadval (guruh)\n/bugun — bugungi hodisalar\n/id — sizning ID"
     );
+  }
+  if ((text === "/jadval" || text === "/oy") && ADMIN_IDS.has(uid)) {
+    const pk = periodKey();
+    return send(GROUP_CHAT_ID, buildMonthlyReport(pk, "Joriy oy"));
   }
   if (text === "/id") {
     return send(chatId, `ID: <code>${uid}</code>\nChat: <code>${chatId}</code>`);
@@ -311,10 +303,15 @@ async function main() {
 
   let offset = 0;
   let lastPoll = 0;
+  let lastMonthCheck = 0;
   for (;;) {
     const tasks = [pollTelegram(offset).then((o) => (offset = o))];
+    const now = Date.now();
+    if (now - lastMonthCheck >= 3600_000) {
+      lastMonthCheck = now;
+      tasks.push(maybeCloseMonth());
+    }
     if (USE_POLL && FACE_PASS) {
-      const now = Date.now();
       if (now - lastPoll >= POLL_SEC * 1000) {
         lastPoll = now;
         tasks.push(pollFace());
