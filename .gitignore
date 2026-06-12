@@ -6,4 +6,6 @@ data/bridge-state.json
 data/state.json
 data/faceid.db
 data/faceid.db-*
+data/faces/
+data/registration.json
 *.log

@@ -11,6 +11,12 @@ import { initDb, shouldRunMonthClose, closePeriod, setMeta } from "./lib/db.mjs"
 import { handleFaceEvent } from "./lib/process-event.mjs";
 import { buildMonthlyReport } from "./lib/report.mjs";
 import { periodKey } from "./lib/period.mjs";
+import {
+  startWizard,
+  loadRegistration,
+  afterPhoto,
+  currentEmployee,
+} from "./lib/register-wizard.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
@@ -236,11 +242,47 @@ async function pollFace() {
   }
 }
 
+async function downloadPhoto(fileId, destPath) {
+  const f = await tg("getFile", { file_id: fileId });
+  const url = `https://api.telegram.org/file/bot${BOT_TOKEN}/${f.file_path}`;
+  const res = await fetch(url);
+  const buf = Buffer.from(await res.arrayBuffer());
+  fs.writeFileSync(destPath, buf);
+}
+
+async function handlePhoto(msg) {
+  const uid = msg.from?.id;
+  const chatId = msg.chat.id;
+  if (!ADMIN_IDS.has(uid)) return;
+  const reg = loadRegistration(DATA_DIR);
+  if (!reg.active || !reg.awaitingPhoto) {
+    return send(chatId, "Avval /hodim buyrug'ini yuboring.");
+  }
+  const emp = currentEmployee(DATA_DIR);
+  if (!emp) return send(chatId, "Navbatda hodim yo'q.");
+
+  const photos = msg.photo;
+  const best = photos[photos.length - 1];
+  const facesDir = path.join(DATA_DIR, "faces");
+  fs.mkdirSync(facesDir, { recursive: true });
+  const filename = `${emp.key}.jpg`;
+  const dest = path.join(facesDir, filename);
+  await downloadPhoto(best.file_id, dest);
+
+  const result = afterPhoto(DATA_DIR, `faces/${filename}`);
+  return send(chatId, result.text);
+}
+
 async function handleUpdate(upd) {
   const msg = upd.message;
-  if (!msg?.text) return;
+  if (!msg) return;
   const chatId = msg.chat.id;
   const uid = msg.from?.id;
+
+  if (msg.photo?.length) {
+    return handlePhoto(msg);
+  }
+  if (!msg.text) return;
   const text = msg.text.trim();
 
   if (text === "/start") {
@@ -248,6 +290,10 @@ async function handleUpdate(upd) {
       chatId,
       "👋 <b>Face ID Hisobot</b>\n\n/jadval — oylik jadval (guruh)\n/bugun — bugungi hodisalar\n/id — sizning ID"
     );
+  }
+  if (text === "/hodim" && ADMIN_IDS.has(uid)) {
+    const r = startWizard(DATA_DIR);
+    return send(chatId, r.text);
   }
   if ((text === "/jadval" || text === "/oy") && ADMIN_IDS.has(uid)) {
     const pk = periodKey();
