@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
+    "local": "node scripts/start-local.mjs",
+    "postinstall": "playwright install chromium",
     "find": "node scripts/find-face.mjs",
     "test-device": "node scripts/test-device.mjs"
   },

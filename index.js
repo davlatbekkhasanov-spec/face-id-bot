@@ -33,9 +33,24 @@ import { checkShiftReminders } from "./lib/reminders.mjs";
 import { sendStoredCard } from "./lib/process-event.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+function loadEnvFile() {
+  const envPath = path.join(__dirname, ".env");
+  if (!fs.existsSync(envPath)) return;
+  for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^([^#=]+)=(.*)$/);
+    if (m && process.env[m[1].trim()] === undefined) {
+      process.env[m[1].trim()] = m[2].trim();
+    }
+  }
+}
+loadEnvFile();
+
 const DATA_DIR =
   process.env.DATA_DIR || process.env.DATABASE_DIR || path.join(__dirname, "data");
-const TELEGRAM_POLL = String(process.env.TELEGRAM_POLL ?? "1") !== "0";
+const ON_RAILWAY = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
+const TELEGRAM_POLL =
+  String(process.env.TELEGRAM_POLL ?? (ON_RAILWAY ? "0" : "1")) !== "0";
 const employees = loadEmployees(DATA_DIR);
 initDb(DATA_DIR);
 
@@ -58,7 +73,8 @@ const POLL_SEC = Math.max(10, Number(process.env.POLL_INTERVAL_SEC || 25));
 const TZ_OFFSET = (process.env.FACE_TIMEZONE || "+05:00").trim();
 const PORT = Number(process.env.PORT || 8080);
 const WEBHOOK_PATH = (process.env.WEBHOOK_PATH || "/webhook/hikvision").trim();
-const USE_POLL = String(process.env.USE_POLL || "0") === "1";
+const USE_POLL =
+  String(process.env.USE_POLL ?? (ON_RAILWAY ? "0" : "1")) === "1";
 
 if (!BOT_TOKEN) {
   console.error("BOT_TOKEN yo'q");
@@ -129,6 +145,7 @@ function attendanceCtx() {
   return {
     botToken: BOT_TOKEN,
     dataDir: DATA_DIR,
+    notifyChatId: NOTIFY_CHAT_ID,
   };
 }
 
@@ -443,17 +460,27 @@ async function handleUpdate(upd) {
 }
 
 async function pollTelegram(offset) {
-  const updates = await tg("getUpdates", { timeout: 30, offset });
-  let next = offset;
-  for (const u of updates) {
-    next = u.update_id + 1;
-    try {
-      await handleUpdate(u);
-    } catch (e) {
-      console.warn("Update:", e.message);
+  try {
+    const updates = await tg("getUpdates", { timeout: 30, offset });
+    let next = offset;
+    for (const u of updates) {
+      next = u.update_id + 1;
+      try {
+        await handleUpdate(u);
+      } catch (e) {
+        console.warn("Update:", e.message);
+      }
     }
+    return next;
+  } catch (e) {
+    if (/getUpdates|Conflict/i.test(e.message)) {
+      console.warn("Telegram poll:", e.message);
+      await new Promise((r) => setTimeout(r, 3000));
+    } else {
+      throw e;
+    }
+    return offset;
   }
-  return next;
 }
 
 async function bootRegistration() {
@@ -470,9 +497,16 @@ async function main() {
   startHttpServer();
   const me = await tg("getMe");
   console.log(
-    `Face ID bot @${me.username} | face=${FACE_IP} | notify=${NOTIFY_CHAT_ID} | tgPoll=${TELEGRAM_POLL}`
+    `Face ID bot @${me.username} | face=${FACE_IP} | notify=${NOTIFY_CHAT_ID} | tgPoll=${TELEGRAM_POLL} | facePoll=${USE_POLL}`
   );
-  if (TELEGRAM_POLL) await bootRegistration();
+  if (TELEGRAM_POLL) {
+    try {
+      await tg("deleteWebhook", { drop_pending_updates: false });
+    } catch (e) {
+      console.warn("deleteWebhook:", e.message);
+    }
+    await bootRegistration();
+  }
 
   let offset = 0;
   let lastPoll = 0;
