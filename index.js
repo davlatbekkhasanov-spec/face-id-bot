@@ -257,11 +257,19 @@ async function pollFace() {
   }
 }
 
-async function downloadPhoto(fileId, destPath) {
+async function downloadFile(fileId) {
   const f = await tg("getFile", { file_id: fileId });
   const url = `https://api.telegram.org/file/bot${BOT_TOKEN}/${f.file_path}`;
   const res = await fetch(url);
-  const buf = Buffer.from(await res.arrayBuffer());
+  return Buffer.from(await res.arrayBuffer());
+}
+
+async function saveFaceBuffer(buf, nameHint, destPath) {
+  const lower = String(nameHint || "").toLowerCase();
+  if (lower.endsWith(".heic") || lower.endsWith(".heif")) {
+    const convert = (await import("heic-convert")).default;
+    buf = Buffer.from(await convert({ buffer: buf, format: "JPEG", quality: 0.92 }));
+  }
   fs.writeFileSync(destPath, buf);
 }
 
@@ -276,13 +284,31 @@ async function handlePhoto(msg) {
   const emp = currentEmployee(DATA_DIR);
   if (!emp) return send(chatId, "Navbatda hodim yo'q.");
 
-  const photos = msg.photo;
-  const best = photos[photos.length - 1];
+  let fileId;
+  let nameHint = "";
+  if (msg.photo?.length) {
+    fileId = msg.photo[msg.photo.length - 1].file_id;
+  } else if (msg.document) {
+    const mime = String(msg.document.mime_type || "");
+    const fname = String(msg.document.file_name || "");
+    const ok =
+      mime.startsWith("image/") ||
+      /\.(jpe?g|png|webp|heic|heif)$/i.test(fname);
+    if (!ok) {
+      return send(chatId, "Faqat rasm faylini yuboring (JPG, PNG, HEIC).");
+    }
+    fileId = msg.document.file_id;
+    nameHint = fname;
+  } else {
+    return send(chatId, "Rasm yuboring (foto yoki fayl sifatida).");
+  }
+
   const facesDir = path.join(DATA_DIR, "faces");
   fs.mkdirSync(facesDir, { recursive: true });
   const filename = `${emp.key}.jpg`;
   const dest = path.join(facesDir, filename);
-  await downloadPhoto(best.file_id, dest);
+  const buf = await downloadFile(fileId);
+  await saveFaceBuffer(buf, nameHint, dest);
 
   const result = afterPhoto(DATA_DIR, `faces/${filename}`);
   return send(chatId, result.text);
@@ -294,7 +320,7 @@ async function handleUpdate(upd) {
   const chatId = msg.chat.id;
   const uid = msg.from?.id;
 
-  if (msg.photo?.length) {
+  if (msg.photo?.length || msg.document) {
     return handlePhoto(msg);
   }
   if (!msg.text) return;
