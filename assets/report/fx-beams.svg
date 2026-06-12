@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1400" viewBox="0 0 1080 1400">
+  <defs>
+    <linearGradient id="beam" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0"/>
+      <stop offset="45%" stop-color="#60a5fa" stop-opacity="0.12"/>
+      <stop offset="55%" stop-color="#d4af37" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#d4af37" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="spot" cx="50%" cy="28%" r="40%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1080" height="1400" fill="url(#spot)"/>
+  <polygon points="0,0 1080,600 1080,750 0,150" fill="url(#beam)"/>
+  <polygon points="0,1250 1080,900 1080,1400 0,1400" fill="url(#beam)" opacity="0.6"/>
+</svg>
