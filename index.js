@@ -6,9 +6,14 @@ import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import DigestFetch from "digest-fetch";
-import { isFaceEvent, loadEmployees, fmtClock, displayName } from "./lib/attendance.mjs";
+import { isFaceEvent, loadEmployees, fmtClock, displayName, eventTimeMs } from "./lib/attendance.mjs";
 import { initDb, shouldRunMonthClose, closePeriod, setMeta } from "./lib/db.mjs";
 import { handleFaceEvent } from "./lib/process-event.mjs";
+import {
+  getPollWatermarkMs,
+  setPollWatermarkMs,
+  markSerialsProcessed,
+} from "./lib/poll-watermark.mjs";
 import { buildMonthlyReport } from "./lib/report.mjs";
 import { periodKey } from "./lib/period.mjs";
 import {
@@ -153,7 +158,7 @@ function attendanceCtx() {
   return {
     botToken: BOT_TOKEN,
     dataDir: DATA_DIR,
-    notifyChatId: NOTIFY_CHAT_ID,
+    pollWatermarkMs: getPollWatermarkMs(),
   };
 }
 
@@ -260,6 +265,13 @@ function startHttpServer() {
     res.writeHead(404);
     res.end("not found");
   });
+  server.on("error", (e) => {
+    if (e.code === "EADDRINUSE") {
+      console.warn(`Port ${PORT} band — HTTP o'tkazib yuborildi (Telegram poll ishlaydi)`);
+      return;
+    }
+    throw e;
+  });
   server.listen(PORT, "0.0.0.0", () => {
     console.log(`HTTP :${PORT} webhook=${WEBHOOK_PATH}`);
   });
@@ -314,8 +326,15 @@ async function pollFace() {
     console.warn("Face poll:", e.message);
     return;
   }
-  const events = parseEvents(raw).reverse();
-  for (const ev of events) {
+  const wm = getPollWatermarkMs();
+  const events = parseEvents(raw);
+  markSerialsProcessed(events.filter((ev) => eventTimeMs(ev) < wm));
+
+  const fresh = events
+    .filter((ev) => isFaceEvent(ev) && eventTimeMs(ev) >= wm)
+    .sort((a, b) => eventTimeMs(a) - eventTimeMs(b));
+
+  for (const ev of fresh) {
     try {
       await processEvent(ev);
     } catch (e) {
@@ -427,10 +446,19 @@ async function handleUpdate(upd) {
 
   if (text === "/reset" && isAdmin) {
     const { resetAllAttendance } = await import("./lib/db.mjs");
+    const { setPollWatermarkMs, markSerialsProcessed } = await import("./lib/poll-watermark.mjs");
     resetAllAttendance();
+    setPollWatermarkMs(Date.now());
+    if (FACE_PASS) {
+      try {
+        const { start, end } = todayRange();
+        const raw = await fetchAcsEvents(start, end);
+        markSerialsProcessed(parseEvents(raw));
+      } catch { /* ignore */ }
+    }
     const lc = path.join(DATA_DIR, "last-card.json");
     if (fs.existsSync(lc)) fs.unlinkSync(lc);
-    return send(chatId, "✅ Barcha davomat ma'lumotlari o'chirildi. 0 dan boshlandi.");
+    return send(chatId, "✅ Barcha ma'lumotlar o'chirildi. Faqat yangi skaner ishlaydi.");
   }
   if (text === "/hisobot" && isAdmin) {
     const r = await sendStoredCard(DATA_DIR, BOT_TOKEN, chatId, employees);
@@ -509,10 +537,15 @@ async function bootRegistration() {
 }
 
 async function main() {
+  if (USE_POLL && !ON_RAILWAY) {
+    setPollWatermarkMs(Date.now() - 60_000);
+    console.log("Poll watermark:", new Date(getPollWatermarkMs()).toISOString());
+  }
+
   startHttpServer();
   const me = await tg("getMe");
   console.log(
-    `Face ID bot @${me.username} | face=${FACE_IP} | notify=${NOTIFY_CHAT_ID} | tgPoll=${TELEGRAM_POLL} | facePoll=${USE_POLL}`
+    `Face ID bot @${me.username} | railway=${ON_RAILWAY} | face=${FACE_IP} | tgPoll=${TELEGRAM_POLL} | facePoll=${USE_POLL}`
   );
   if (TELEGRAM_POLL) {
     try {
@@ -539,7 +572,7 @@ async function main() {
       lastMonthCheck = now;
       tasks.push(maybeCloseMonth());
     }
-    if (now - lastReminderCheck >= 60_000) {
+    if (now - lastReminderCheck >= 60_000 && !ON_RAILWAY) {
       lastReminderCheck = now;
       tasks.push(
         Promise.resolve(
