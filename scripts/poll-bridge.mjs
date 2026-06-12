@@ -24,8 +24,8 @@ const employees = loadEmployees(dataDir);
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GROUP_CHAT_ID = process.env.GROUP_CHAT_ID;
 const NOTIFY_CHAT_ID = process.env.NOTIFY_CHAT_ID;
-const ATTENDANCE_TO_GROUP = String(process.env.ATTENDANCE_TO_GROUP ?? "1") !== "0";
-const ATTENDANCE_TO_DM = String(process.env.ATTENDANCE_TO_DM ?? "0") === "1";
+const ATTENDANCE_TO_GROUP = String(process.env.ATTENDANCE_TO_GROUP ?? "0") === "1";
+const ATTENDANCE_TO_DM = String(process.env.ATTENDANCE_TO_DM ?? "1") !== "0";
 const FACE_IP = process.env.FACE_DEVICE_IP || "192.168.0.28";
 const FACE_USER = process.env.FACE_DEVICE_USER || "admin";
 const FACE_PASS = process.env.FACE_DEVICE_PASSWORD;
@@ -35,8 +35,8 @@ const TZ = process.env.FACE_TIMEZONE || "+05:00";
 const ctx = {
   botToken: BOT_TOKEN,
   dataDir: process.env.DATABASE_DIR || dataDir,
-  groupChatId: ATTENDANCE_TO_GROUP ? GROUP_CHAT_ID : null,
   notifyChatId: ATTENDANCE_TO_DM ? NOTIFY_CHAT_ID : null,
+  groupChatId: ATTENDANCE_TO_GROUP ? GROUP_CHAT_ID : null,
 };
 
 function today() {
@@ -70,7 +70,8 @@ async function fetchEvents() {
   return list ? (Array.isArray(list) ? list : [list]) : [];
 }
 
-console.log(`Poll bridge → guruh ${GROUP_CHAT_ID} | poll=${POLL}s`);
+const dest = ctx.notifyChatId || ctx.groupChatId || "?";
+console.log(`Poll bridge → ${dest} | poll=${POLL}s`);
 
 for (;;) {
   try {
