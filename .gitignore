@@ -7,5 +7,6 @@ data/state.json
 data/faceid.db
 data/faceid.db-*
 data/faces/
+data/test-report.png
 data/registration.json
 *.log
