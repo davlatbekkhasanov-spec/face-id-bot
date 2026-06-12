@@ -8,6 +8,7 @@ import DigestFetch from "digest-fetch";
 import { loadEmployees } from "../lib/attendance-core.mjs";
 import { initDb } from "../lib/db.mjs";
 import { handleFaceEvent } from "../lib/process-event.mjs";
+import { checkShiftReminders } from "../lib/reminders.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
@@ -37,6 +38,7 @@ const ctx = {
   dataDir: process.env.DATABASE_DIR || dataDir,
   notifyChatId: ATTENDANCE_TO_DM ? NOTIFY_CHAT_ID : null,
   groupChatId: ATTENDANCE_TO_GROUP ? GROUP_CHAT_ID : null,
+  autoSend: String(process.env.AUTO_SEND_ATTENDANCE ?? "0") === "1",
 };
 
 function today() {
@@ -71,13 +73,27 @@ async function fetchEvents() {
 }
 
 const dest = ctx.notifyChatId || ctx.groupChatId || "?";
-console.log(`Poll bridge → ${dest} | poll=${POLL}s`);
+console.log(`Poll bridge → saqlash rejimi | poll=${POLL}s | autoSend=${ctx.autoSend}`);
+
+async function tgSend(chatId, text) {
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+  });
+}
+
+let lastRem = 0;
 
 for (;;) {
   try {
     const events = await fetchEvents();
     for (const ev of events.reverse()) {
       await handleFaceEvent(ev, employees, ctx);
+    }
+    if (Date.now() - lastRem >= 60_000) {
+      lastRem = Date.now();
+      checkShiftReminders(employees, (id, t) => tgSend(id, t));
     }
   } catch (e) {
     console.warn(e.message);

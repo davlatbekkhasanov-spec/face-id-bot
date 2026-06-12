@@ -5,7 +5,10 @@
       "lastName": "Khasanov",
       "deviceName": "DAVLATBEK KHASANOV",
       "telegramId": 1432810519,
-      "faceRegistered": true
+      "faceRegistered": true,
+      "photoFile": "faces/1.jpg",
+      "shiftVariable": true,
+      "shiftHours": 12
     },
     "924612402": {
       "firstName": "Umid",
@@ -13,7 +16,9 @@
       "deviceName": "YADULLAEV UMID",
       "telegramId": 924612402,
       "faceRegistered": true,
-      "photoFile": "faces/924612402.jpg"
+      "photoFile": "faces/924612402.jpg",
+      "shiftStart": "09:00",
+      "shiftHours": 12
     },
     "5412958249": {
       "firstName": "Oxunjon",
@@ -21,7 +26,9 @@
       "deviceName": "RAVSHANOV OXUNJON",
       "telegramId": 5412958249,
       "faceRegistered": true,
-      "photoFile": "faces/5412958249.jpg"
+      "photoFile": "faces/5412958249.jpg",
+      "shiftStart": "07:30",
+      "shiftHours": 12
     },
     "8547365654": {
       "firstName": "Sindor",
@@ -29,7 +36,9 @@
       "deviceName": "RUZIBOEV SINDOR",
       "telegramId": 8547365654,
       "faceRegistered": true,
-      "photoFile": "faces/8547365654.jpg"
+      "photoFile": "faces/8547365654.jpg",
+      "shiftStart": "09:00",
+      "shiftHours": 12
     },
     "6931958983": {
       "firstName": "Abdullo",
@@ -37,7 +46,9 @@
       "deviceName": "MUSTAFOEV ABDULLO",
       "telegramId": 6931958983,
       "faceRegistered": true,
-      "photoFile": "faces/6931958983.jpg"
+      "photoFile": "faces/6931958983.jpg",
+      "shiftStart": "09:00",
+      "shiftHours": 12
     },
     "6991673998": {
       "firstName": "Yunus",
@@ -45,7 +56,9 @@
       "deviceName": "SAGDULLAEV YUNUS",
       "telegramId": 6991673998,
       "faceRegistered": true,
-      "photoFile": "faces/6991673998.jpg"
+      "photoFile": "faces/6991673998.jpg",
+      "shiftStart": "07:30",
+      "shiftHours": 12
     },
     "5465963344": {
       "firstName": "Tolib",
@@ -53,7 +66,9 @@
       "deviceName": "SHERNAZAROV TOLIB",
       "telegramId": 5465963344,
       "faceRegistered": true,
-      "photoFile": "faces/5465963344.jpg"
+      "photoFile": "faces/5465963344.jpg",
+      "shiftStart": "07:30",
+      "shiftHours": 12
     },
     "6001619806": {
       "firstName": "Tulqin",
@@ -61,7 +76,9 @@
       "deviceName": "SAMADOV TULQIN",
       "telegramId": 6001619806,
       "faceRegistered": true,
-      "photoFile": "faces/6001619806.jpg"
+      "photoFile": "faces/6001619806.jpg",
+      "shiftStart": "07:30",
+      "shiftHours": 12
     },
     "5732350707": {
       "firstName": "Muslimbek",
@@ -69,7 +86,9 @@
       "deviceName": "TOXIROV MUSLIMBEK",
       "telegramId": 5732350707,
       "faceRegistered": true,
-      "photoFile": "faces/5732350707.jpg"
+      "photoFile": "faces/5732350707.jpg",
+      "shiftStart": "10:00",
+      "shiftHours": 12
     },
     "8440127425": {
       "firstName": "Ziyodullo",
@@ -77,7 +96,9 @@
       "deviceName": "RAVSHANOV ZIYODULLO",
       "telegramId": 8440127425,
       "faceRegistered": true,
-      "photoFile": "faces/8440127425.jpg"
+      "photoFile": "faces/8440127425.jpg",
+      "shiftStart": "10:00",
+      "shiftHours": 12
     },
     "7703650930": {
       "firstName": "Farrux",
@@ -85,7 +106,9 @@
       "deviceName": "TUVALOV FARRUX",
       "telegramId": 7703650930,
       "faceRegistered": true,
-      "photoFile": "faces/7703650930.jpg"
+      "photoFile": "faces/7703650930.jpg",
+      "shiftStart": "09:00",
+      "shiftHours": 12
     }
   }
 }

@@ -6,7 +6,7 @@ import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import DigestFetch from "digest-fetch";
-import { isFaceEvent, loadEmployees, fmtClock } from "./lib/attendance.mjs";
+import { isFaceEvent, loadEmployees, fmtClock, displayName } from "./lib/attendance.mjs";
 import { initDb, shouldRunMonthClose, closePeriod, setMeta } from "./lib/db.mjs";
 import { handleFaceEvent } from "./lib/process-event.mjs";
 import { buildMonthlyReport } from "./lib/report.mjs";
@@ -18,6 +18,19 @@ import {
   currentEmployee,
   askMessage,
 } from "./lib/register-wizard.mjs";
+import {
+  canUseBot,
+  handleCallbackQuery,
+  adminWelcome,
+  employeeWelcome,
+  employeeShiftInfo,
+  accessDeniedMessage,
+  adminMainKeyboard,
+  employeeMenuKeyboard,
+} from "./lib/bot-handlers.mjs";
+import { staffKeyByTelegramId } from "./lib/access.mjs";
+import { checkShiftReminders } from "./lib/reminders.mjs";
+import { sendStoredCard } from "./lib/process-event.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR =
@@ -114,6 +127,7 @@ function empName(ev) {
 
 const ATTENDANCE_TO_GROUP = String(process.env.ATTENDANCE_TO_GROUP ?? "0") === "1";
 const ATTENDANCE_TO_DM = String(process.env.ATTENDANCE_TO_DM ?? "1") !== "0";
+const AUTO_SEND = String(process.env.AUTO_SEND_ATTENDANCE ?? "0") === "1";
 
 function attendanceCtx() {
   return {
@@ -121,6 +135,19 @@ function attendanceCtx() {
     dataDir: DATA_DIR,
     notifyChatId: ATTENDANCE_TO_DM ? NOTIFY_CHAT_ID : null,
     groupChatId: ATTENDANCE_TO_GROUP ? GROUP_CHAT_ID : null,
+    autoSend: AUTO_SEND,
+  };
+}
+
+function botCtx() {
+  return {
+    botToken: BOT_TOKEN,
+    dataDir: DATA_DIR,
+    employees,
+    adminIds: ADMIN_IDS,
+    notifyChatId: NOTIFY_CHAT_ID,
+    tgAnswer: (id, text) => tg("answerCallbackQuery", { callback_query_id: id, text: text || "" }),
+    tgSend: (chatId, text, extra = {}) => send(chatId, text, extra),
   };
 }
 
@@ -337,10 +364,21 @@ async function handlePhoto(msg) {
 }
 
 async function handleUpdate(upd) {
+  if (upd.callback_query) {
+    return handleCallbackQuery(upd.callback_query, botCtx());
+  }
+
   const msg = upd.message;
   if (!msg) return;
   const chatId = msg.chat.id;
   const uid = msg.from?.id;
+
+  if (!canUseBot(uid, employees, ADMIN_IDS)) {
+    if (msg.text || msg.photo || msg.document) {
+      return send(chatId, accessDeniedMessage());
+    }
+    return;
+  }
 
   if (msg.photo?.length || msg.document) {
     return handlePhoto(msg);
@@ -348,11 +386,31 @@ async function handleUpdate(upd) {
   if (!msg.text) return;
   const text = msg.text.trim();
 
+  const isAdmin = ADMIN_IDS.has(uid);
+
   if (text === "/start") {
-    return send(
-      chatId,
-      "👋 <b>Face ID Hisobot</b>\n\n/jadval — oylik jadval (guruh)\n/bugun — bugungi hodisalar\n/id — sizning ID"
-    );
+    if (isAdmin) {
+      return send(chatId, adminWelcome(), { reply_markup: adminMainKeyboard() });
+    }
+    const key = staffKeyByTelegramId(uid, employees);
+    const name = key ? displayName(key, {}, employees) : "Hodim";
+    return send(chatId, employeeWelcome(name), { reply_markup: employeeMenuKeyboard() });
+  }
+
+  if (text === "/panel" && isAdmin) {
+    return send(chatId, adminWelcome(), { reply_markup: adminMainKeyboard() });
+  }
+
+  if (text === "📋 Mening smenam" || text === "/smenam") {
+    const info = employeeShiftInfo(uid, employees);
+    if (!info) return send(chatId, "Ma'lumot topilmadi.");
+    return send(chatId, info);
+  }
+
+  if (text === "/hisobot" && isAdmin) {
+    const r = await sendStoredCard(DATA_DIR, BOT_TOKEN, chatId, employees);
+    if (!r.ok) return send(chatId, `⚠️ ${r.error}`);
+    return send(chatId, "✅ Oxirgi hisobot yuborildi.");
   }
   if (text === "/hodim" && ADMIN_IDS.has(uid)) {
     const r = startWizard(DATA_DIR);
@@ -426,6 +484,7 @@ async function main() {
   let offset = 0;
   let lastPoll = 0;
   let lastMonthCheck = 0;
+  let lastReminderCheck = 0;
   for (;;) {
     const tasks = [];
     if (TELEGRAM_POLL) {
@@ -437,6 +496,14 @@ async function main() {
     if (now - lastMonthCheck >= 3600_000) {
       lastMonthCheck = now;
       tasks.push(maybeCloseMonth());
+    }
+    if (now - lastReminderCheck >= 60_000) {
+      lastReminderCheck = now;
+      tasks.push(
+        Promise.resolve(
+          checkShiftReminders(employees, (chatId, text) => send(chatId, text))
+        )
+      );
     }
     if (USE_POLL && FACE_PASS) {
       if (now - lastPoll >= POLL_SEC * 1000) {

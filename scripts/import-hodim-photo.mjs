@@ -81,6 +81,8 @@ async function main() {
   const dest = path.join(facesDir, `${emp.key}.jpg`);
   const jpeg = await toJpegBuffer(photo.path);
   fs.writeFileSync(dest, jpeg);
+  const { normalizePortrait } = await import("../lib/portrait.mjs");
+  await normalizePortrait(dest, dest);
 
   const result = afterPhoto(dataDir, `faces/${emp.key}.jpg`);
   const archived = path.join(DONE_DIR, `${emp.key}_${Date.now()}_${photo.name}`);
