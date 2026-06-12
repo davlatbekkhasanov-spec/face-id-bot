@@ -54,6 +54,18 @@ if (!BOT_TOKEN) {
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
+function ensureDataFiles() {
+  const bundled = path.join(__dirname, "data");
+  for (const name of ["employees.json"]) {
+    const dest = path.join(DATA_DIR, name);
+    const src = path.join(bundled, name);
+    if (!fs.existsSync(dest) && fs.existsSync(src)) {
+      fs.copyFileSync(src, dest);
+    }
+  }
+}
+ensureDataFiles();
+
 function todayRange() {
   const d = new Date();
   const y = d.getFullYear();
