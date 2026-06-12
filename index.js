@@ -590,6 +590,7 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(e);
-  process.exit(1);
+  console.error("Fatal:", e.message);
+  // Railway restart o'rniga qayta urinish
+  setTimeout(() => process.exit(1), 1000);
 });
