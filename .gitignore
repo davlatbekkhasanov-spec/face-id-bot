@@ -2,5 +2,6 @@ node_modules/
 .env
 .env.*
 !.env.example
-data/
+data/bridge-state.json
+data/state.json
 *.log

@@ -6,9 +6,16 @@ import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import DigestFetch from "digest-fetch";
+import {
+  isFaceEvent,
+  loadEmployees,
+  buildMessage,
+  fmtClock,
+} from "./lib/attendance.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
+const employees = loadEmployees(DATA_DIR);
 const STATE_FILE = path.join(DATA_DIR, "state.json");
 
 const BOT_TOKEN = (process.env.BOT_TOKEN || "").trim();
@@ -23,7 +30,7 @@ const ADMIN_IDS = new Set(
     .filter(Boolean)
     .map(Number)
 );
-const FACE_IP = (process.env.FACE_DEVICE_IP || "192.168.110.50").trim();
+const FACE_IP = (process.env.FACE_DEVICE_IP || "192.168.0.28").trim();
 const FACE_USER = (process.env.FACE_DEVICE_USER || "admin").trim();
 const FACE_PASS = (process.env.FACE_DEVICE_PASSWORD || "").trim();
 const POLL_SEC = Math.max(10, Number(process.env.POLL_INTERVAL_SEC || 25));
@@ -43,7 +50,7 @@ function loadState() {
   try {
     return JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
   } catch {
-    return { lastSerial: 0, seen: {} };
+    return { lastSerial: 0, staff: {} };
   }
 }
 
@@ -87,49 +94,16 @@ function empName(ev) {
   ).toString().trim();
 }
 
-function isFaceEvent(ev) {
-  const n = empName(ev);
-  if (!n || n === "?" || n.toLowerCase() === "noma'lum") return false;
-  if (ev.minor !== undefined && Number(ev.minor) !== 75) return false;
-  return true;
-}
-
-function isIn(ev) {
-  const t = String(ev.attendanceStatus || ev.label || ev.minor || ev.subEventType || "").toLowerCase();
-  if (t.includes("out") || t.includes("check out") || t === "2" || t.includes("checkout")) return false;
-  return true;
-}
-
-function eventKey(ev) {
-  return `${ev.serialNo || ev.time || ev.dateTime || ""}_${empName(ev)}_${isIn(ev) ? "in" : "out"}`;
-}
-
-function fmtTime(ev) {
-  const t = String(ev.time || ev.dateTime || "");
-  const m = t.match(/T(\d{2}:\d{2}:\d{2})/);
-  return m ? m[1].slice(0, 5) : t.slice(11, 16) || "—";
-}
-
-async function notifyEvent(ev) {
-  const name = empName(ev);
-  const time = fmtTime(ev);
-  const icon = isIn(ev) ? "📥" : "📤";
-  const action = isIn(ev) ? "keldi" : "ketdi";
-  const text = `${icon} <b>${name}</b> ${action} — <b>${time}</b>`;
-  await send(NOTIFY_CHAT_ID, text);
-}
-
 async function processEvent(ev) {
   if (!isFaceEvent(ev)) return false;
   const state = loadState();
   const serial = Number(ev.serialNo || 0);
   if (serial && serial <= (state.lastSerial || 0)) return false;
-  const k = serial ? `s${serial}` : eventKey(ev);
-  if (state.seen[k]) return false;
-  state.seen[k] = true;
+  const msg = buildMessage(ev, state, employees);
   if (serial > (state.lastSerial || 0)) state.lastSerial = serial;
   saveState(state);
-  await notifyEvent(ev);
+  if (!msg) return false;
+  await send(NOTIFY_CHAT_ID, msg);
   return true;
 }
 
@@ -192,7 +166,7 @@ async function handleWebhook(req, res) {
       return;
     }
     const ok = await processEvent(ev);
-    if (ok) console.log(`Webhook: ${empName(ev)} ${isIn(ev) ? "keldi" : "ketdi"}`);
+    if (ok) console.log(`Webhook: ${empName(ev)}`);
   } catch (e) {
     console.warn("Webhook:", e.message);
   }
@@ -299,9 +273,8 @@ async function handleUpdate(upd) {
       const raw = await fetchAcsEvents(start, end);
       const events = parseEvents(raw);
       if (!events.length) return send(chatId, "Bugun hodisa yo'q yoki ulanish xato.");
-      const lines = events.slice(0, 20).map((ev) => {
-        const icon = isIn(ev) ? "📥" : "📤";
-        return `${icon} ${empName(ev)} — ${fmtTime(ev)}`;
+      const lines = events.filter(isFaceEvent).slice(0, 20).map((ev) => {
+        return `• ${empName(ev)} — ${fmtClock(ev)}`;
       });
       return send(chatId, `<b>Bugun:</b>\n${lines.join("\n")}`);
     } catch (e) {
@@ -335,10 +308,6 @@ async function main() {
   startHttpServer();
   const me = await tg("getMe");
   console.log(`Face ID bot @${me.username} | face=${FACE_IP} | notify=${NOTIFY_CHAT_ID}`);
-  await send(
-    NOTIFY_CHAT_ID,
-    `🟢 <b>Face ID bot ishga tushdi</b> (test rejimi — lichka)\n@${me.username}`
-  ).catch(() => {});
 
   let offset = 0;
   let lastPoll = 0;
