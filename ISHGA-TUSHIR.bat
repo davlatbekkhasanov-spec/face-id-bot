@@ -2,10 +2,19 @@
 cd /d "%~dp0"
 title Face ID Bot
 if not exist .env (
-  echo .env yoq! Avval install-shop.ps1 ni ishga tushiring.
+  echo .env yoq!
   pause
   exit /b 1
 )
-echo Face ID bot ishga tushmoqda...
+echo.
+echo ========================================
+echo   FACE ID BOT - DO'KON KOMPYUTERI
+echo   Railway kerak emas!
+echo ========================================
+echo.
+echo Face ID qidiryapman...
+node scripts/find-face.mjs
+echo.
+echo Bot ishga tushmoqda...
 node index.js
 pause
