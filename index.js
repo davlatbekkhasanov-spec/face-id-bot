@@ -127,10 +127,29 @@ function xmlTag(xml, tag) {
 }
 
 function parseWebhookBody(raw) {
-  if (!raw || !raw.includes("AccessControllerEvent") && !raw.includes("employeeName")) {
-    return null;
+  if (!raw) return null;
+  let block = raw;
+  if (raw.includes("application/json") || raw.trim().startsWith("{")) {
+    const jsonPart = raw.match(/\{[\s\S]*\}/)?.[0];
+    if (jsonPart) {
+      try {
+        const j = JSON.parse(jsonPart);
+        const e = j.AccessControllerEvent || j.AcsEvent || j;
+        return {
+          name: e.employeeName || e.name,
+          employeeNoString: e.employeeNoString || e.employeeNo,
+          dateTime: e.dateTime || e.time,
+          minor: e.minor || e.subEventType,
+          label: e.label,
+          attendanceStatus: e.attendanceStatus,
+          serialNo: e.serialNo,
+          time: e.dateTime || e.time,
+        };
+      } catch { /* xml fallback */ }
+    }
   }
-  const block = raw.includes("AccessControllerEvent")
+  if (!raw.includes("AccessControllerEvent") && !raw.includes("employeeName")) return null;
+  block = raw.includes("AccessControllerEvent")
     ? raw.match(/<AccessControllerEvent[\s\S]*?<\/AccessControllerEvent>/i)?.[0] || raw
     : raw;
   const ev = {
@@ -154,8 +173,12 @@ async function handleWebhook(req, res) {
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("OK");
   try {
+    console.log(`Webhook in: ${raw.length}b`);
     const ev = parseWebhookBody(raw);
-    if (!ev) return;
+    if (!ev) {
+      console.warn("Webhook: parse failed", raw.slice(0, 120));
+      return;
+    }
     const ok = await processEvent(ev);
     if (ok) console.log(`Webhook: ${empName(ev)} ${isIn(ev) ? "keldi" : "ketdi"}`);
   } catch (e) {
