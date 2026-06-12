@@ -1,5 +1,5 @@
 /**
- * Terminal yuz tanish tezligini oshirish (xavfsiz sozlamalar).
+ * Terminal: tez tanish + bir kishi takror skan bo'lmasin.
  */
 import fs from "fs";
 import path from "path";
@@ -30,8 +30,9 @@ const reader = JSON.parse(
   await (await client.fetch(`http://${ip}/ISAPI/AccessControl/CardReaderCfg/1?format=json`)).text()
 ).CardReaderCfg;
 
-reader.faceRecogizeInterval = 1;
-reader.faceRecogizeTimeOut = 2;
+// Bir kishi yuzini ko'rsatganda faqat 1 marta skan (keyingisi 10 sek kutadi)
+reader.faceRecogizeInterval = 10;
+reader.faceRecogizeTimeOut = 3;
 reader.faceMatchThresholdN = 85;
 reader.faceMatchThreshold1 = 85;
 
@@ -41,7 +42,8 @@ const acs = JSON.parse(
   await (await client.fetch(`http://${ip}/ISAPI/AccessControl/AcsCfg?format=json`)).text()
 ).AcsCfg;
 acs.needDeviceCheck = false;
+acs.faceDuplicateCheckEnabled = true;
 
 await put("/ISAPI/AccessControl/AcsCfg?format=json", { AcsCfg: acs });
 
-console.log("OK: interval=1s, timeout=2s, threshold=85, remoteCheck=off");
+console.log("OK: interval=10s (takror yo'q), threshold=85, duplicateCheck=on");
