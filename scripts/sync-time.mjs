@@ -26,7 +26,7 @@ const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <Time version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema">
 <timeMode>manual</timeMode>
 <localTime>${localTime}</localTime>
-<timeZone>+05:00</timeZone>
+<timeZone>STD-5:00:00</timeZone>
 </Time>`;
 
 const res = await client.fetch(`http://${ip}/ISAPI/System/time`, {
