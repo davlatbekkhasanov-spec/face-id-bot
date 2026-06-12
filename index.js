@@ -83,8 +83,15 @@ function empName(ev) {
     ev.employeeNoString ||
     ev.employeeNo ||
     ev.cardNo ||
-    "Noma'lum"
-  ).toString();
+    ""
+  ).toString().trim();
+}
+
+function isFaceEvent(ev) {
+  const n = empName(ev);
+  if (!n || n === "?" || n.toLowerCase() === "noma'lum") return false;
+  if (ev.minor !== undefined && Number(ev.minor) !== 75) return false;
+  return true;
 }
 
 function isIn(ev) {
@@ -113,11 +120,13 @@ async function notifyEvent(ev) {
 }
 
 async function processEvent(ev) {
+  if (!isFaceEvent(ev)) return false;
   const state = loadState();
-  const k = eventKey(ev);
+  const serial = Number(ev.serialNo || 0);
+  if (serial && serial <= (state.lastSerial || 0)) return false;
+  const k = serial ? `s${serial}` : eventKey(ev);
   if (state.seen[k]) return false;
   state.seen[k] = true;
-  const serial = Number(ev.serialNo || 0);
   if (serial > (state.lastSerial || 0)) state.lastSerial = serial;
   saveState(state);
   await notifyEvent(ev);
