@@ -63,6 +63,16 @@ function ensureDataFiles() {
       fs.copyFileSync(src, dest);
     }
   }
+  const bundledFaces = path.join(bundled, "faces");
+  const destFaces = path.join(DATA_DIR, "faces");
+  if (fs.existsSync(bundledFaces)) {
+    fs.mkdirSync(destFaces, { recursive: true });
+    for (const f of fs.readdirSync(bundledFaces)) {
+      if (!/\.(jpe?g|png)$/i.test(f)) continue;
+      const dest = path.join(destFaces, f);
+      if (!fs.existsSync(dest)) fs.copyFileSync(path.join(bundledFaces, f), dest);
+    }
+  }
 }
 ensureDataFiles();
 
