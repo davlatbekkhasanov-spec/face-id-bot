@@ -11,6 +11,7 @@ import { initDb } from "./lib/db.mjs";
 import { handleFaceEvent } from "./lib/process-event.mjs";
 import { getPollWatermarkMs } from "./lib/poll-watermark.mjs";
 import { listAllShifts } from "./lib/shifts.mjs";
+import { bootstrapPersistence, persistenceStatusLine, resolveDataDir } from "./lib/persist-data.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.join(__dirname, ".env");
@@ -21,7 +22,8 @@ if (fs.existsSync(envPath)) {
   }
 }
 
-const DATA_DIR = process.env.DATABASE_DIR || process.env.DATA_DIR || path.join(__dirname, "data");
+const BUNDLED_DIR = path.join(__dirname, "data");
+const DATA_DIR = resolveDataDir(BUNDLED_DIR);
 const BOT_TOKEN = (process.env.BOT_TOKEN || "").trim();
 const NOTIFY_CHAT_ID = String(
   process.env.NOTIFY_CHAT_ID || process.env.ADMIN_IDS?.split(/[,;]/)[0] || "1432810519"
@@ -51,7 +53,7 @@ function copyDirFiles(srcDir, destDir) {
 }
 
 function mergeBundledEmployees() {
-  const bundled = path.join(__dirname, "data", "employees.json");
+  const bundled = path.join(BUNDLED_DIR, "employees.json");
   const destEmp = path.join(DATA_DIR, "employees.json");
   if (!fs.existsSync(bundled)) return;
   const src = JSON.parse(fs.readFileSync(bundled, "utf8"));
@@ -77,11 +79,10 @@ function mergeBundledEmployees() {
 }
 
 function ensureBundledData() {
-  const bundled = path.join(__dirname, "data");
   const assets = path.join(__dirname, "assets");
   const destEmp = path.join(DATA_DIR, "employees.json");
   if (!fs.existsSync(destEmp)) {
-    for (const src of [path.join(bundled, "employees.json"), path.join(assets, "employees.json")]) {
+    for (const src of [path.join(BUNDLED_DIR, "employees.json"), path.join(assets, "employees.json")]) {
       if (fs.existsSync(src)) {
         fs.copyFileSync(src, destEmp);
         break;
@@ -90,10 +91,11 @@ function ensureBundledData() {
   }
   mergeBundledEmployees();
   copyDirFiles(path.join(assets, "faces"), path.join(DATA_DIR, "faces"));
-  copyDirFiles(path.join(bundled, "faces"), path.join(DATA_DIR, "faces"));
+  copyDirFiles(path.join(BUNDLED_DIR, "faces"), path.join(DATA_DIR, "faces"));
 }
-ensureBundledData();
 
+const persist = bootstrapPersistence(DATA_DIR, BUNDLED_DIR);
+ensureBundledData();
 initDb(DATA_DIR);
 const employees = loadEmployees(DATA_DIR);
 
@@ -137,8 +139,10 @@ function parseBody(raw) {
 
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    return res.end("face-id-bot ok v1.6.2 early+overtime");
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    return res.end(
+      `face-id-bot ok v1.6.3 persist\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+    );
   }
   if (req.method === "GET" && req.url === "/shifts") {
     const rows = listAllShifts(employees);
@@ -168,5 +172,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Railway v1.6 | DM=${NOTIFY_CHAT_ID} | shifts=on`);
+  console.log(`Railway v1.6.3 | DM=${NOTIFY_CHAT_ID} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`);
 });
