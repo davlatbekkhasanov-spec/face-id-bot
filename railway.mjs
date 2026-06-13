@@ -1,6 +1,5 @@
 /**
- * Railway ONLY — terminal webhook → admin lichka.
- * Local ISHGA-TUSHIR.bat ISHLATMAYDI.
+ * Railway ONLY — terminal webhook → guruh; admin panel → lichka.
  */
 import fs from "fs";
 import http from "http";
@@ -14,6 +13,7 @@ import { listAllShifts } from "./lib/shifts.mjs";
 import { bootstrapPersistence, persistenceStatusLine, resolveDataDir } from "./lib/persist-data.mjs";
 import { startTelegramPoll } from "./lib/telegram-poll.mjs";
 import { parseAdminIds } from "./lib/access.mjs";
+import { parseAdminDmId, parseGroupChatId } from "./lib/chats.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.join(__dirname, ".env");
@@ -27,9 +27,8 @@ if (fs.existsSync(envPath)) {
 const BUNDLED_DIR = path.join(__dirname, "data");
 const DATA_DIR = resolveDataDir(BUNDLED_DIR);
 const BOT_TOKEN = (process.env.BOT_TOKEN || "").trim();
-const NOTIFY_CHAT_ID = String(
-  process.env.NOTIFY_CHAT_ID || process.env.ADMIN_IDS?.split(/[,;]/)[0] || "1432810519"
-).trim();
+const GROUP_CHAT_ID = parseGroupChatId();
+const ADMIN_DM_ID = parseAdminDmId();
 const WEBHOOK_PATH = (process.env.WEBHOOK_PATH || "/webhook/hikvision").trim();
 const PORT = Number(process.env.PORT || 8080);
 
@@ -37,8 +36,12 @@ if (!BOT_TOKEN) {
   console.error("BOT_TOKEN yo'q");
   process.exit(1);
 }
-if (!NOTIFY_CHAT_ID) {
-  console.error("NOTIFY_CHAT_ID yo'q");
+if (!GROUP_CHAT_ID) {
+  console.error("GROUP_ID yo'q (keldi/ketdi guruhga ketmaydi)");
+  process.exit(1);
+}
+if (!ADMIN_DM_ID) {
+  console.error("ADMIN_IDS yoki NOTIFY_CHAT_ID yo'q");
   process.exit(1);
 }
 
@@ -104,7 +107,8 @@ const employees = loadEmployees(DATA_DIR);
 const ctx = {
   botToken: BOT_TOKEN,
   dataDir: DATA_DIR,
-  notifyChatId: NOTIFY_CHAT_ID,
+  groupChatId: GROUP_CHAT_ID,
+  adminChatId: ADMIN_DM_ID,
   pollWatermarkMs: getPollWatermarkMs(),
   photoDirs: [path.join(__dirname, "assets"), path.join(__dirname, "data")],
   employees,
@@ -152,7 +156,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     return res.end(
-      `face-id-bot ok v1.8.2 data-manage\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+      `face-id-bot ok v1.8.3 group+admin\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
     );
   }
   if (req.method === "GET" && req.url === "/shifts") {
@@ -183,5 +187,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Railway v1.6.3 | DM=${NOTIFY_CHAT_ID} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`);
+  console.log(
+    `Railway v1.8.3 | guruh=${GROUP_CHAT_ID} admin=${ADMIN_DM_ID} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+  );
 });
