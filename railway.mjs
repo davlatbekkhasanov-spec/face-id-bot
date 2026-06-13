@@ -87,7 +87,7 @@ function parseBody(raw) {
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain" });
-    return res.end("face-id-bot ok v1.3 dm-only");
+    return res.end("face-id-bot ok v1.4 b5-photo");
   }
   if (req.method === "POST" && req.url === WEBHOOK_PATH) {
     const chunks = [];
@@ -111,5 +111,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Railway v1.3 | webhook ${WEBHOOK_PATH} | DM=${NOTIFY_CHAT_ID}`);
+  console.log(`Railway v1.4 | webhook ${WEBHOOK_PATH} | DM=${NOTIFY_CHAT_ID} | photo=B5`);
 });
