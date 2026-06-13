@@ -1,6 +1,6 @@
 /**
- * Railway uchun minimal server — faqat health + webhook, crash bo'lmaydi.
- * Asosiy bot do'konda: ISHGA-TUSHIR.bat
+ * Railway: faqat webhook → guruh. Telegram poll YO'Q (crash bo'lmasin).
+ * Do'kon: ISHGA-TUSHIR.bat → node index.js
  */
 import fs from "fs";
 import http from "http";
@@ -12,12 +12,12 @@ import { handleFaceEvent } from "./lib/process-event.mjs";
 import { getPollWatermarkMs } from "./lib/poll-watermark.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-for (const line of fs.existsSync(path.join(__dirname, ".env"))
-  ? fs.readFileSync(path.join(__dirname, ".env"), "utf8").split(/\r?\n/)
-  : []) {
-  const m = line.match(/^([^#=]+)=(.*)$/);
-  if (m && process.env[m[1].trim()] === undefined) process.env[m[1].trim()] = m[2].trim();
+const envPath = path.join(__dirname, ".env");
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
+    const m = line.match(/^([^#=]+)=(.*)$/);
+    if (m && process.env[m[1].trim()] === undefined) process.env[m[1].trim()] = m[2].trim();
+  }
 }
 
 const DATA_DIR = process.env.DATABASE_DIR || process.env.DATA_DIR || path.join(__dirname, "data");
@@ -27,8 +27,15 @@ const WEBHOOK_PATH = (process.env.WEBHOOK_PATH || "/webhook/hikvision").trim();
 const PORT = Number(process.env.PORT || 8080);
 
 if (!BOT_TOKEN) {
-  console.error("BOT_TOKEN yo'q");
+  console.error("BOT_TOKEN yo'q — Railway Variables ga qo'shing");
   process.exit(1);
+}
+
+fs.mkdirSync(DATA_DIR, { recursive: true });
+const bundled = path.join(__dirname, "data", "employees.json");
+const destEmp = path.join(DATA_DIR, "employees.json");
+if (!fs.existsSync(destEmp) && fs.existsSync(bundled)) {
+  fs.copyFileSync(bundled, destEmp);
 }
 
 initDb(DATA_DIR);
@@ -74,7 +81,7 @@ function parseBody(raw) {
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain" });
-    return res.end("face-id-bot ok v1.1");
+    return res.end("face-id-bot ok v1.2 webhook-only");
   }
   if (req.method === "POST" && req.url === WEBHOOK_PATH) {
     const chunks = [];
@@ -84,7 +91,10 @@ const server = http.createServer(async (req, res) => {
     res.end("OK");
     try {
       const ev = parseBody(raw);
-      if (ev) await handleFaceEvent(ev, employees, ctx);
+      if (ev) {
+        const ok = await handleFaceEvent(ev, employees, ctx);
+        if (ok) console.log("Webhook:", ev.name || ev.employeeNoString);
+      }
     } catch (e) {
       console.warn("webhook:", e.message);
     }
@@ -95,5 +105,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Railway webhook :${PORT} | guruh=${GROUP_CHAT_ID} | v1.1`);
+  console.log(`Railway v1.2 | webhook :${PORT}${WEBHOOK_PATH} | guruh=${GROUP_CHAT_ID} | tgPoll=OFF`);
 });

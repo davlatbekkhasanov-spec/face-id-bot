@@ -1,10 +1,11 @@
 {
   "name": "face-id-bot",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node index.js",
+    "start": "node railway.mjs",
+    "shop": "node index.js",
     "local": "node scripts/start-local.mjs",
     "reset": "node scripts/reset-all.mjs",
     "find": "node scripts/find-face.mjs",

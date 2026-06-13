@@ -1,5 +1,6 @@
 /**
- * Face ID bot — Hikvision webhook/poll → Telegram
+ * Face ID bot — do'kon kompyuteri (ISHGA-TUSHIR.bat)
+ * Railway da ISHLATMAYDI — u yerda railway.mjs ishlaydi.
  */
 import fs from "fs";
 import http from "http";
@@ -49,6 +50,15 @@ function loadEnvFile() {
   }
 }
 loadEnvFile();
+
+if (
+  process.env.RAILWAY_ENVIRONMENT ||
+  process.env.RAILWAY_PROJECT_ID ||
+  process.env.RAILWAY_SERVICE_ID ||
+  process.env.RAILWAY_REPLICA_ID
+) {
+  await import("./railway.mjs");
+}
 
 const DATA_DIR =
   process.env.DATA_DIR || process.env.DATABASE_DIR || path.join(__dirname, "data");
