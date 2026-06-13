@@ -1,10 +1,18 @@
 /**
  * Hikvision Face terminal ulanishini tekshirish (faqat o'qish).
- * Ishlatish: node scripts/test-device.mjs [IP]
  */
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import DigestFetch from "digest-fetch";
 
-const ip = (process.argv[2] || process.env.FACE_DEVICE_IP || "192.168.110.50").trim();
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+for (const line of fs.readFileSync(path.join(root, ".env"), "utf8").split(/\r?\n/)) {
+  const m = line.match(/^([^#=]+)=(.*)$/);
+  if (m) process.env[m[1].trim()] = m[2].trim();
+}
+
+const ip = (process.argv[2] || process.env.FACE_DEVICE_IP || "192.168.110.135").trim();
 const user = (process.env.FACE_DEVICE_USER || "admin").trim();
 const pass = (process.env.FACE_DEVICE_PASSWORD || "").trim();
 
