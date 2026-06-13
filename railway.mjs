@@ -64,10 +64,14 @@ function mergeBundledEmployees() {
   dest.staff ||= {};
   for (const [key, s] of Object.entries(src.staff || {})) {
     dest.staff[key] = { ...(dest.staff[key] || {}), ...s };
-    for (const f of ["shiftStart", "shiftHours", "firstName", "lastName", "deviceName", "telegramId", "photoFile"]) {
+    for (const f of ["shiftStart", "shiftHours", "firstName", "lastName", "deviceName", "telegramId", "photoFile", "noShift"]) {
       if (s[f] != null) dest.staff[key][f] = s[f];
     }
     delete dest.staff[key].shiftVariable;
+    if (dest.staff[key].noShift) {
+      delete dest.staff[key].shiftStart;
+      delete dest.staff[key].shiftHours;
+    }
   }
   fs.writeFileSync(destEmp, JSON.stringify(dest, null, 2));
 }
