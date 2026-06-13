@@ -38,11 +38,33 @@ if (!NOTIFY_CHAT_ID) {
 }
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
-const bundled = path.join(__dirname, "data", "employees.json");
-const destEmp = path.join(DATA_DIR, "employees.json");
-if (!fs.existsSync(destEmp) && fs.existsSync(bundled)) {
-  fs.copyFileSync(bundled, destEmp);
+
+function copyDirFiles(srcDir, destDir) {
+  if (!fs.existsSync(srcDir)) return;
+  fs.mkdirSync(destDir, { recursive: true });
+  for (const f of fs.readdirSync(srcDir)) {
+    if (!/\.(jpe?g|png)$/i.test(f)) continue;
+    const dest = path.join(destDir, f);
+    if (!fs.existsSync(dest)) fs.copyFileSync(path.join(srcDir, f), dest);
+  }
 }
+
+function ensureBundledData() {
+  const bundled = path.join(__dirname, "data");
+  const assets = path.join(__dirname, "assets");
+  const destEmp = path.join(DATA_DIR, "employees.json");
+  if (!fs.existsSync(destEmp)) {
+    for (const src of [path.join(bundled, "employees.json"), path.join(assets, "employees.json")]) {
+      if (fs.existsSync(src)) {
+        fs.copyFileSync(src, destEmp);
+        break;
+      }
+    }
+  }
+  copyDirFiles(path.join(assets, "faces"), path.join(DATA_DIR, "faces"));
+  copyDirFiles(path.join(bundled, "faces"), path.join(DATA_DIR, "faces"));
+}
+ensureBundledData();
 
 initDb(DATA_DIR);
 const employees = loadEmployees(DATA_DIR);
@@ -52,6 +74,7 @@ const ctx = {
   dataDir: DATA_DIR,
   notifyChatId: NOTIFY_CHAT_ID,
   pollWatermarkMs: getPollWatermarkMs(),
+  photoDirs: [path.join(__dirname, "assets"), path.join(__dirname, "data")],
 };
 
 function parseBody(raw) {
@@ -87,7 +110,7 @@ function parseBody(raw) {
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain" });
-    return res.end("face-id-bot ok v1.4 b5-photo");
+    return res.end("face-id-bot ok v1.5 one-msg");
   }
   if (req.method === "POST" && req.url === WEBHOOK_PATH) {
     const chunks = [];
@@ -111,5 +134,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Railway v1.4 | webhook ${WEBHOOK_PATH} | DM=${NOTIFY_CHAT_ID} | photo=B5`);
+  console.log(`Railway v1.5 | DM=${NOTIFY_CHAT_ID} | photo=360px | dedup=on`);
 });
