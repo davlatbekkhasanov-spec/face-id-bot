@@ -1,6 +1,6 @@
 /**
- * Railway: faqat webhook → guruh. Telegram poll YO'Q (crash bo'lmasin).
- * Do'kon: ISHGA-TUSHIR.bat → node index.js
+ * Railway ONLY — terminal webhook → admin lichka.
+ * Local ISHGA-TUSHIR.bat ISHLATMAYDI.
  */
 import fs from "fs";
 import http from "http";
@@ -22,15 +22,18 @@ if (fs.existsSync(envPath)) {
 
 const DATA_DIR = process.env.DATABASE_DIR || process.env.DATA_DIR || path.join(__dirname, "data");
 const BOT_TOKEN = (process.env.BOT_TOKEN || "").trim();
-const GROUP_CHAT_ID = String(process.env.GROUP_CHAT_ID || "-1001877019294").trim();
 const NOTIFY_CHAT_ID = String(
-  process.env.NOTIFY_CHAT_ID || process.env.ADMIN_IDS?.split(/[,;]/)[0] || GROUP_CHAT_ID
+  process.env.NOTIFY_CHAT_ID || process.env.ADMIN_IDS?.split(/[,;]/)[0] || "1432810519"
 ).trim();
 const WEBHOOK_PATH = (process.env.WEBHOOK_PATH || "/webhook/hikvision").trim();
 const PORT = Number(process.env.PORT || 8080);
 
 if (!BOT_TOKEN) {
-  console.error("BOT_TOKEN yo'q — Railway Variables ga qo'shing");
+  console.error("BOT_TOKEN yo'q");
+  process.exit(1);
+}
+if (!NOTIFY_CHAT_ID) {
+  console.error("NOTIFY_CHAT_ID yo'q");
   process.exit(1);
 }
 
@@ -48,7 +51,6 @@ const ctx = {
   botToken: BOT_TOKEN,
   dataDir: DATA_DIR,
   notifyChatId: NOTIFY_CHAT_ID,
-  groupChatId: GROUP_CHAT_ID,
   pollWatermarkMs: getPollWatermarkMs(),
 };
 
@@ -85,7 +87,7 @@ function parseBody(raw) {
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain" });
-    return res.end("face-id-bot ok v1.2 webhook-only");
+    return res.end("face-id-bot ok v1.3 dm-only");
   }
   if (req.method === "POST" && req.url === WEBHOOK_PATH) {
     const chunks = [];
@@ -97,7 +99,7 @@ const server = http.createServer(async (req, res) => {
       const ev = parseBody(raw);
       if (ev) {
         const ok = await handleFaceEvent(ev, employees, ctx);
-        if (ok) console.log("Webhook:", ev.name || ev.employeeNoString);
+        if (ok) console.log("Webhook → DM:", ev.name || ev.employeeNoString);
       }
     } catch (e) {
       console.warn("webhook:", e.message);
@@ -109,5 +111,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Railway v1.2 | webhook :${PORT}${WEBHOOK_PATH} | notify=${NOTIFY_CHAT_ID} | tgPoll=OFF`);
+  console.log(`Railway v1.3 | webhook ${WEBHOOK_PATH} | DM=${NOTIFY_CHAT_ID}`);
 });
