@@ -167,6 +167,7 @@ function attendanceCtx() {
   return {
     botToken: BOT_TOKEN,
     dataDir: DATA_DIR,
+    notifyChatId: NOTIFY_CHAT_ID,
     groupChatId: GROUP_CHAT_ID,
     pollWatermarkMs: getPollWatermarkMs(),
   };

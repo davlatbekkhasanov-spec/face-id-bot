@@ -23,6 +23,9 @@ if (fs.existsSync(envPath)) {
 const DATA_DIR = process.env.DATABASE_DIR || process.env.DATA_DIR || path.join(__dirname, "data");
 const BOT_TOKEN = (process.env.BOT_TOKEN || "").trim();
 const GROUP_CHAT_ID = String(process.env.GROUP_CHAT_ID || "-1001877019294").trim();
+const NOTIFY_CHAT_ID = String(
+  process.env.NOTIFY_CHAT_ID || process.env.ADMIN_IDS?.split(/[,;]/)[0] || GROUP_CHAT_ID
+).trim();
 const WEBHOOK_PATH = (process.env.WEBHOOK_PATH || "/webhook/hikvision").trim();
 const PORT = Number(process.env.PORT || 8080);
 
@@ -44,6 +47,7 @@ const employees = loadEmployees(DATA_DIR);
 const ctx = {
   botToken: BOT_TOKEN,
   dataDir: DATA_DIR,
+  notifyChatId: NOTIFY_CHAT_ID,
   groupChatId: GROUP_CHAT_ID,
   pollWatermarkMs: getPollWatermarkMs(),
 };
@@ -105,5 +109,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Railway v1.2 | webhook :${PORT}${WEBHOOK_PATH} | guruh=${GROUP_CHAT_ID} | tgPoll=OFF`);
+  console.log(`Railway v1.2 | webhook :${PORT}${WEBHOOK_PATH} | notify=${NOTIFY_CHAT_ID} | tgPoll=OFF`);
 });
