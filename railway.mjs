@@ -138,7 +138,7 @@ function parseBody(raw) {
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain" });
-    return res.end("face-id-bot ok v1.6.1 late");
+    return res.end("face-id-bot ok v1.6.2 early+overtime");
   }
   if (req.method === "GET" && req.url === "/shifts") {
     const rows = listAllShifts(employees);
