@@ -10,6 +10,7 @@
     "reset": "node scripts/reset-all.mjs",
     "find": "node scripts/find-face.mjs",
     "list-shifts": "node scripts/list-shifts.mjs",
+    "test-device": "node scripts/test-device.mjs"
   },
   "engines": {
     "node": ">=20"
