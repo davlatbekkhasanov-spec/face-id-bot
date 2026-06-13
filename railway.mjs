@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import { loadEmployees } from "./lib/attendance-core.mjs";
 import { initDb } from "./lib/db.mjs";
 import { handleFaceEvent } from "./lib/process-event.mjs";
+import { getPollWatermarkMs } from "./lib/poll-watermark.mjs";
 import { listAllShifts } from "./lib/shifts.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
