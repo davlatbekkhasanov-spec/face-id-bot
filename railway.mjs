@@ -12,6 +12,8 @@ import { handleFaceEvent } from "./lib/process-event.mjs";
 import { getPollWatermarkMs } from "./lib/poll-watermark.mjs";
 import { listAllShifts } from "./lib/shifts.mjs";
 import { bootstrapPersistence, persistenceStatusLine, resolveDataDir } from "./lib/persist-data.mjs";
+import { startTelegramPoll } from "./lib/telegram-poll.mjs";
+import { parseAdminIds } from "./lib/access.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.join(__dirname, ".env");
@@ -105,7 +107,16 @@ const ctx = {
   notifyChatId: NOTIFY_CHAT_ID,
   pollWatermarkMs: getPollWatermarkMs(),
   photoDirs: [path.join(__dirname, "assets"), path.join(__dirname, "data")],
+  employees,
+  adminIds: parseAdminIds(),
 };
+
+const enablePoll = process.env.TELEGRAM_POLL !== "0";
+if (enablePoll) {
+  startTelegramPoll(ctx);
+} else {
+  console.log("Telegram poll o'chirilgan (TELEGRAM_POLL=0)");
+}
 
 function parseBody(raw) {
   if (!raw) return null;
@@ -141,7 +152,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     return res.end(
-      `face-id-bot ok v1.6.5 stats\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+      `face-id-bot ok v1.7 admin-manual\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
     );
   }
   if (req.method === "GET" && req.url === "/shifts") {
