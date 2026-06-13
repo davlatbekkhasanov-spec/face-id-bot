@@ -7,7 +7,7 @@
       "telegramId": 1432810519,
       "faceRegistered": true,
       "photoFile": "faces/1.jpg",
-      "shiftVariable": true,
+      "shiftStart": "09:00",
       "shiftHours": 12
     },
     "924612402": {

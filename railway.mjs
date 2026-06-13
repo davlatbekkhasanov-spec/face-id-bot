@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 import { loadEmployees } from "./lib/attendance-core.mjs";
 import { initDb } from "./lib/db.mjs";
 import { handleFaceEvent } from "./lib/process-event.mjs";
-import { getPollWatermarkMs } from "./lib/poll-watermark.mjs";
+import { listAllShifts } from "./lib/shifts.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.join(__dirname, ".env");
@@ -49,6 +49,28 @@ function copyDirFiles(srcDir, destDir) {
   }
 }
 
+function mergeBundledEmployees() {
+  const bundled = path.join(__dirname, "data", "employees.json");
+  const destEmp = path.join(DATA_DIR, "employees.json");
+  if (!fs.existsSync(bundled)) return;
+  const src = JSON.parse(fs.readFileSync(bundled, "utf8"));
+  let dest = { staff: {} };
+  if (fs.existsSync(destEmp)) {
+    try {
+      dest = JSON.parse(fs.readFileSync(destEmp, "utf8"));
+    } catch { /* yangi */ }
+  }
+  dest.staff ||= {};
+  for (const [key, s] of Object.entries(src.staff || {})) {
+    dest.staff[key] = { ...(dest.staff[key] || {}), ...s };
+    for (const f of ["shiftStart", "shiftHours", "firstName", "lastName", "deviceName", "telegramId", "photoFile"]) {
+      if (s[f] != null) dest.staff[key][f] = s[f];
+    }
+    delete dest.staff[key].shiftVariable;
+  }
+  fs.writeFileSync(destEmp, JSON.stringify(dest, null, 2));
+}
+
 function ensureBundledData() {
   const bundled = path.join(__dirname, "data");
   const assets = path.join(__dirname, "assets");
@@ -61,6 +83,7 @@ function ensureBundledData() {
       }
     }
   }
+  mergeBundledEmployees();
   copyDirFiles(path.join(assets, "faces"), path.join(DATA_DIR, "faces"));
   copyDirFiles(path.join(bundled, "faces"), path.join(DATA_DIR, "faces"));
 }
@@ -110,7 +133,13 @@ function parseBody(raw) {
 const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain" });
-    return res.end("face-id-bot ok v1.5 one-msg");
+    return res.end("face-id-bot ok v1.6 shifts");
+  }
+  if (req.method === "GET" && req.url === "/shifts") {
+    const rows = listAllShifts(employees);
+    const lines = rows.map((r) => `${r.name.padEnd(22)} | ${r.shift}`);
+    res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
+    return res.end(["=== HODIMLAR SMENASI (12 soat) ===", ...lines].join("\n"));
   }
   if (req.method === "POST" && req.url === WEBHOOK_PATH) {
     const chunks = [];
@@ -134,5 +163,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Railway v1.5 | DM=${NOTIFY_CHAT_ID} | photo=360px | dedup=on`);
+  console.log(`Railway v1.6 | DM=${NOTIFY_CHAT_ID} | shifts=on`);
 });
