@@ -1,0 +1,32 @@
+name: Deploy Railway
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOOK: ${{ secrets.RAILWAY_DEPLOY_HOOK }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Railway Deploy Hook
+        if: env.DEPLOY_HOOK != ''
+        run: curl -fsS -X POST "$DEPLOY_HOOK"
+
+      - name: Railway CLI redeploy
+        if: env.DEPLOY_HOOK == '' && env.RAILWAY_TOKEN != ''
+        run: |
+          npm i -g @railway/cli
+          railway redeploy --yes
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy sozlanmagan
+        if: env.DEPLOY_HOOK == '' && env.RAILWAY_TOKEN == ''
+        run: |
+          echo "Railway GitHub auto-deploy uzilgan."
+          echo "RAILWAY-DEPLOY.md ni o'qing — Deploy Hook qo'shing."

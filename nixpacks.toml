@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "python3", "gcc", "gnumake"]
+
+[phases.install]
+cmds = ["npm ci --omit=dev"]
+
+[phases.build]
+cmds = ["echo build ok"]
+
+[start]
+cmd = "node railway.mjs"
