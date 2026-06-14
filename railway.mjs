@@ -1,5 +1,5 @@
 /**
- * Railway ONLY — terminal webhook → guruh; admin panel → lichka.
+ * Railway ONLY — keldi/ketdi (ATTENDANCE_TO_GROUP); hisobot → admin lichka.
  */
 import fs from "fs";
 import http from "http";
@@ -13,7 +13,7 @@ import { listAllShifts } from "./lib/shifts.mjs";
 import { bootstrapPersistence, persistenceStatusLine, resolveDataDir } from "./lib/persist-data.mjs";
 import { startTelegramPoll } from "./lib/telegram-poll.mjs";
 import { parseAdminIds } from "./lib/access.mjs";
-import { parseAdminDmId, parseGroupChatId } from "./lib/chats.mjs";
+import { parseAdminDmId, parseGroupChatId, attendanceRouteLabel } from "./lib/chats.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.join(__dirname, ".env");
@@ -156,7 +156,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     return res.end(
-      `face-id-bot ok v1.9.1 staff-reset\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+      `face-id-bot ok v1.9.2 attendance-dm\nkeldi/ketdi: ${attendanceRouteLabel(ctx)}\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
     );
   }
   if (req.method === "GET" && req.url === "/shifts") {
@@ -175,7 +175,7 @@ const server = http.createServer(async (req, res) => {
       const ev = parseBody(raw);
       if (ev) {
         const ok = await handleFaceEvent(ev, employees, ctx);
-        if (ok) console.log("Webhook → guruh:", ev.name || ev.employeeNoString);
+        if (ok) console.log("Webhook →", attendanceRouteLabel(ctx), ev.name || ev.employeeNoString);
       }
     } catch (e) {
       console.warn("webhook:", e.message);
@@ -188,6 +188,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(
-    `Railway v1.9.1 | guruh=${GROUP_CHAT_ID} admin=${ADMIN_DM_ID} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+    `Railway v1.9.2 | keldi/ketdi: ${attendanceRouteLabel(ctx)} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
   );
 });
