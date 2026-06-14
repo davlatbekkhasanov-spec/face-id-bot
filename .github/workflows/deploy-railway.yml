@@ -3,30 +3,28 @@ name: Deploy Railway
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      DEPLOY_HOOK: ${{ secrets.RAILWAY_DEPLOY_HOOK }}
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      YORDAMCHI_HUB_SECRET: ${{ secrets.YORDAMCHI_HUB_SECRET }}
+      DEPLOY_HOOK: ${{ secrets.RAILWAY_DEPLOY_HOOK }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Railway Deploy Hook
-        if: env.DEPLOY_HOOK != ''
+      - name: Railway deploy (env + latest commit)
+        if: env.RAILWAY_TOKEN != ''
+        run: node scripts/railway-deploy.mjs
+
+      - name: Deploy Hook fallback
+        if: env.RAILWAY_TOKEN == '' && env.DEPLOY_HOOK != ''
         run: curl -fsS -X POST "$DEPLOY_HOOK"
 
-      - name: Railway CLI redeploy
-        if: env.DEPLOY_HOOK == '' && env.RAILWAY_TOKEN != ''
+      - name: Token yo'q
+        if: env.RAILWAY_TOKEN == '' && env.DEPLOY_HOOK == ''
         run: |
-          npm i -g @railway/cli
-          railway redeploy --yes
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: Deploy sozlanmagan
-        if: env.DEPLOY_HOOK == '' && env.RAILWAY_TOKEN == ''
-        run: |
-          echo "Railway GitHub auto-deploy uzilgan."
-          echo "RAILWAY-DEPLOY.md ni o'qing — Deploy Hook qo'shing."
+          echo "GitHub Secrets: RAILWAY_TOKEN yoki RAILWAY_DEPLOY_HOOK qo'shing"
+          exit 1
