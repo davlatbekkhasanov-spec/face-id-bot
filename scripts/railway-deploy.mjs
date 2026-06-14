@@ -95,7 +95,7 @@ async function main() {
       POINTS_ENABLED: "1",
       POINTS_DAILY_PENALTY_CAP: "0",
       ATTENDANCE_TO_GROUP: "1",
-      TELEGRAM_POLL: "0",
+      TELEGRAM_POLL: "1",
       DATABASE_DIR: "/data",
       TZ: "Asia/Tashkent",
       LATE_GRACE_MIN: "5",
