@@ -156,7 +156,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     return res.end(
-      `face-id-bot ok v1.8.3 group+admin\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+      `face-id-bot ok v1.9.0 points\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
     );
   }
   if (req.method === "GET" && req.url === "/shifts") {
@@ -175,7 +175,7 @@ const server = http.createServer(async (req, res) => {
       const ev = parseBody(raw);
       if (ev) {
         const ok = await handleFaceEvent(ev, employees, ctx);
-        if (ok) console.log("Webhook → DM:", ev.name || ev.employeeNoString);
+        if (ok) console.log("Webhook → guruh:", ev.name || ev.employeeNoString);
       }
     } catch (e) {
       console.warn("webhook:", e.message);
@@ -188,6 +188,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(
-    `Railway v1.8.3 | guruh=${GROUP_CHAT_ID} admin=${ADMIN_DM_ID} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+    `Railway v1.9.0 | guruh=${GROUP_CHAT_ID} admin=${ADMIN_DM_ID} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
   );
 });
