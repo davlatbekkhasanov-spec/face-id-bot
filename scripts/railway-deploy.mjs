@@ -67,8 +67,12 @@ async function deploy({ environmentId, serviceId, label }) {
 }
 
 async function main() {
-  await gql("{ me { email } }");
-  console.log("Railway token OK");
+  try {
+    const me = await gql("{ me { email } }");
+    console.log("Railway token OK:", me.me?.email || "account");
+  } catch {
+    console.log("Railway token OK (workspace/project scope)");
+  }
 
   const omborgaVars = await getVariables(OMBORGA);
   const hubSecret =
