@@ -14,6 +14,7 @@ import { bootstrapPersistence, persistenceStatusLine, resolveDataDir } from "./l
 import { startTelegramPoll } from "./lib/telegram-poll.mjs";
 import { parseAdminIds } from "./lib/access.mjs";
 import { parseAdminDmId, parseGroupChatId, attendanceRouteLabel } from "./lib/chats.mjs";
+import { syncTodayPointsToHub } from "./lib/yordamchi-push.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const envPath = path.join(__dirname, ".env");
@@ -122,6 +123,12 @@ if (enablePoll) {
   console.log("Telegram poll o'chirilgan (TELEGRAM_POLL=0)");
 }
 
+syncTodayPointsToHub(employees)
+  .then((r) => {
+    if (r.pushed) console.log(`Hub sync: ${r.pushed} hodim`);
+  })
+  .catch((e) => console.warn("Hub sync:", e.message));
+
 function parseBody(raw) {
   if (!raw) return null;
   if (raw.includes("{")) {
@@ -156,7 +163,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     return res.end(
-      `face-id-bot ok v1.9.3 points-fix\nkeldi/ketdi: ${attendanceRouteLabel(ctx)}\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+      `face-id-bot ok v1.10.0 hub+rank\nkeldi/ketdi: ${attendanceRouteLabel(ctx)}\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
     );
   }
   if (req.method === "GET" && req.url === "/shifts") {
@@ -188,6 +195,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(
-    `Railway v1.9.3 | keldi/ketdi: ${attendanceRouteLabel(ctx)} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+    `Railway v1.10.0 | keldi/ketdi: ${attendanceRouteLabel(ctx)} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
   );
 });
