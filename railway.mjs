@@ -6,7 +6,7 @@ import http from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import { loadEmployees } from "./lib/attendance-core.mjs";
-import { initDb } from "./lib/db.mjs";
+import { initDb, syncStaffNamesFromEmployees } from "./lib/db.mjs";
 import { handleFaceEvent } from "./lib/process-event.mjs";
 import { getPollWatermarkMs } from "./lib/poll-watermark.mjs";
 import { listAllShifts } from "./lib/shifts.mjs";
@@ -48,13 +48,15 @@ if (!ADMIN_DM_ID) {
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
-function copyDirFiles(srcDir, destDir) {
+function copyDirFiles(srcDir, destDir, { overwrite = false } = {}) {
   if (!fs.existsSync(srcDir)) return;
   fs.mkdirSync(destDir, { recursive: true });
   for (const f of fs.readdirSync(srcDir)) {
     if (!/\.(jpe?g|png)$/i.test(f)) continue;
+    const src = path.join(srcDir, f);
     const dest = path.join(destDir, f);
-    if (!fs.existsSync(dest)) fs.copyFileSync(path.join(srcDir, f), dest);
+    if (!overwrite && fs.existsSync(dest)) continue;
+    fs.copyFileSync(src, dest);
   }
 }
 
@@ -96,14 +98,16 @@ function ensureBundledData() {
     }
   }
   mergeBundledEmployees();
-  copyDirFiles(path.join(assets, "faces"), path.join(DATA_DIR, "faces"));
-  copyDirFiles(path.join(BUNDLED_DIR, "faces"), path.join(DATA_DIR, "faces"));
+  copyDirFiles(path.join(assets, "faces"), path.join(DATA_DIR, "faces"), { overwrite: true });
+  copyDirFiles(path.join(BUNDLED_DIR, "faces"), path.join(DATA_DIR, "faces"), { overwrite: true });
 }
 
 const persist = bootstrapPersistence(DATA_DIR, BUNDLED_DIR);
 ensureBundledData();
 initDb(DATA_DIR);
 const employees = loadEmployees(DATA_DIR);
+const nameSync = syncStaffNamesFromEmployees(employees);
+if (nameSync) console.log(`Staff names synced in DB: ${nameSync} row(s)`);
 
 const ctx = {
   botToken: BOT_TOKEN,
