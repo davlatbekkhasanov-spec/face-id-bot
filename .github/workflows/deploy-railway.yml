@@ -23,8 +23,9 @@ jobs:
         if: env.RAILWAY_TOKEN == '' && env.DEPLOY_HOOK != ''
         run: curl -fsS -X POST "$DEPLOY_HOOK"
 
-      - name: Token yo'q
+      - name: Deploy sozlanmagan
         if: env.RAILWAY_TOKEN == '' && env.DEPLOY_HOOK == ''
         run: |
-          echo "GitHub Secrets: RAILWAY_TOKEN yoki RAILWAY_DEPLOY_HOOK qo'shing"
+          echo "::error::GitHub Secrets: RAILWAY_TOKEN yoki RAILWAY_DEPLOY_HOOK qo'shing"
+          echo "Railway → FaceIdBot → Settings → Deploy Hook → GitHub secret RAILWAY_DEPLOY_HOOK"
           exit 1

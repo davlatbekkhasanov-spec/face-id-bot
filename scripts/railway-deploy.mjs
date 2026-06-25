@@ -1,4 +1,4 @@
-/** GitHub Actions: env + latest GitHub commit deploy */
+/** GitHub Actions / local: Railway ga oxirgi GitHub commitdan deploy */
 
 const TOKEN = (process.env.RAILWAY_TOKEN || process.env.RAILWAY_API_TOKEN || "").trim();
 if (!TOKEN) {
@@ -48,15 +48,23 @@ async function upsertVariables({ projectId, environmentId, serviceId, variables 
   });
 }
 
-async function deploy({ environmentId, serviceId, label }) {
-  const q = `mutation($environmentId: String!, $serviceId: String!) {
-    serviceInstanceDeployV2(environmentId: $environmentId, serviceId: $serviceId)
+/** Oxirgi GitHub commitdan yangi build + deploy */
+async function deployLatest({ environmentId, serviceId, label }) {
+  const q = `mutation($serviceId: String!, $environmentId: String!, $latestCommit: Boolean) {
+    serviceInstanceDeploy(serviceId: $serviceId, environmentId: $environmentId, latestCommit: $latestCommit)
   }`;
-  const data = await gql(q, { environmentId, serviceId });
-  console.log(`deploy ${label}:`, data.serviceInstanceDeployV2 ? "OK" : "?");
+  const data = await gql(q, { serviceId, environmentId, latestCommit: true });
+  console.log(`deploy ${label}:`, data.serviceInstanceDeploy ? "OK (latest commit)" : "?");
 }
 
-async function resolveHubConfig() {
+async function main() {
+  try {
+    const me = await gql("{ me { email } }");
+    console.log("Railway token OK:", me.me?.email || "account");
+  } catch {
+    console.log("Railway token OK (workspace/project scope)");
+  }
+
   const faceVars = await getVariables(FACE);
   const hubSecret = (
     process.env.YORDAMCHI_HUB_SECRET ||
@@ -69,41 +77,27 @@ async function resolveHubConfig() {
     DEFAULT_HUB_URL
   ).trim();
 
-  if (!hubSecret) {
-    throw new Error(
-      "YORDAMCHI_HUB_SECRET topilmadi (GitHub secret yoki face-id Railway env)"
-    );
+  if (hubSecret) {
+    await upsertVariables({
+      ...FACE,
+      variables: {
+        YORDAMCHI_HUB_URL: hubUrl,
+        YORDAMCHI_HUB_SECRET: hubSecret,
+        POINTS_ENABLED: "1",
+        POINTS_DAILY_PENALTY_CAP: "0",
+        ATTENDANCE_TO_GROUP: "1",
+        TELEGRAM_POLL: "1",
+        DATABASE_DIR: "/data",
+        TZ: "Asia/Tashkent",
+        LATE_GRACE_MIN: "5",
+      },
+    });
+    console.log("Face ID env: hub OK");
+  } else {
+    console.log("Face ID env: hub secret yo'q — faqat deploy");
   }
-  return { hubSecret, hubUrl };
-}
 
-async function main() {
-  try {
-    const me = await gql("{ me { email } }");
-    console.log("Railway token OK:", me.me?.email || "account");
-  } catch {
-    console.log("Railway token OK (workspace/project scope)");
-  }
-
-  const { hubSecret, hubUrl } = await resolveHubConfig();
-
-  await upsertVariables({
-    ...FACE,
-    variables: {
-      YORDAMCHI_HUB_URL: hubUrl,
-      YORDAMCHI_HUB_SECRET: hubSecret,
-      POINTS_ENABLED: "1",
-      POINTS_DAILY_PENALTY_CAP: "0",
-      ATTENDANCE_TO_GROUP: "1",
-      TELEGRAM_POLL: "1",
-      DATABASE_DIR: "/data",
-      TZ: "Asia/Tashkent",
-      LATE_GRACE_MIN: "5",
-    },
-  });
-  console.log("Face ID env: hub OK, group=1, cap=0");
-
-  await deploy({ ...FACE, label: "face-id-bot" });
+  await deployLatest({ ...FACE, label: "face-id-bot" });
 }
 
 main().catch((e) => {
