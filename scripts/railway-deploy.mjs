@@ -77,6 +77,15 @@ async function main() {
     DEFAULT_HUB_URL
   ).trim();
 
+  await upsertVariables({
+    ...FACE,
+    variables: {
+      ATTENDANCE_TO_GROUP: "1",
+      EXTRA_GROUP_IDS: "-5351426801",
+    },
+  });
+  console.log("Face ID env: keldi/ketdi guruhlari yangilandi");
+
   if (hubSecret) {
     await upsertVariables({
       ...FACE,
@@ -85,7 +94,6 @@ async function main() {
         YORDAMCHI_HUB_SECRET: hubSecret,
         POINTS_ENABLED: "1",
         POINTS_DAILY_PENALTY_CAP: "0",
-        ATTENDANCE_TO_GROUP: "1",
         TELEGRAM_POLL: "1",
         DATABASE_DIR: "/data",
         TZ: "Asia/Tashkent",

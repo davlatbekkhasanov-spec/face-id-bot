@@ -13,7 +13,7 @@ import { listAllShifts } from "./lib/shifts.mjs";
 import { bootstrapPersistence, persistenceStatusLine, resolveDataDir } from "./lib/persist-data.mjs";
 import { startTelegramPoll } from "./lib/telegram-poll.mjs";
 import { parseAdminIds } from "./lib/access.mjs";
-import { parseAdminDmId, parseGroupChatId, attendanceRouteLabel } from "./lib/chats.mjs";
+import { parseAdminDmId, parseAttendanceGroupIds, attendanceRouteLabel } from "./lib/chats.mjs";
 import { syncTodayPointsToHub, hubConfigured, hubStatusLabel } from "./lib/yordamchi-push.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -28,7 +28,7 @@ if (fs.existsSync(envPath)) {
 const BUNDLED_DIR = path.join(__dirname, "data");
 const DATA_DIR = resolveDataDir(BUNDLED_DIR);
 const BOT_TOKEN = (process.env.BOT_TOKEN || "").trim();
-const GROUP_CHAT_ID = parseGroupChatId();
+const GROUP_CHAT_IDS = parseAttendanceGroupIds();
 const ADMIN_DM_ID = parseAdminDmId();
 const WEBHOOK_PATH = (process.env.WEBHOOK_PATH || "/webhook/hikvision").trim();
 const PORT = Number(process.env.PORT || 8080);
@@ -37,7 +37,7 @@ if (!BOT_TOKEN) {
   console.error("BOT_TOKEN yo'q");
   process.exit(1);
 }
-if (!GROUP_CHAT_ID) {
+if (!GROUP_CHAT_IDS.length) {
   console.error("GROUP_ID yo'q (keldi/ketdi guruhga ketmaydi)");
   process.exit(1);
 }
@@ -112,7 +112,8 @@ if (nameSync) console.log(`Staff names synced in DB: ${nameSync} row(s)`);
 const ctx = {
   botToken: BOT_TOKEN,
   dataDir: DATA_DIR,
-  groupChatId: GROUP_CHAT_ID,
+  groupChatId: GROUP_CHAT_IDS[0],
+  groupChatIds: GROUP_CHAT_IDS,
   adminChatId: ADMIN_DM_ID,
   pollWatermarkMs: getPollWatermarkMs(),
   photoDirs: [path.join(__dirname, "assets"), path.join(__dirname, "data")],
