@@ -85,7 +85,7 @@ async function resizeJpeg(srcPath, maxBytes = 190_000) {
   return buf;
 }
 
-async function upsertUser(employeeNo, name) {
+async function upsertUser(employeeNo, name, exists = false) {
   const payload = {
     UserInfo: {
       employeeNo: String(employeeNo),
@@ -102,13 +102,33 @@ async function upsertUser(employeeNo, name) {
     },
   };
   if (dryRun) return { ok: true, dry: true };
+  const path = exists
+    ? "/ISAPI/AccessControl/UserInfo/Modify?format=json"
+    : "/ISAPI/AccessControl/UserInfo/Record?format=json";
+  const method = exists ? "PUT" : "POST";
+  const r = await api(method, path, JSON.stringify(payload), "application/json");
+  if (!okResponse(r) && !exists && r.json?.subStatusCode === "employeeNoAlreadyExist") {
+    return upsertUser(employeeNo, name, true);
+  }
+  return { ok: okResponse(r), detail: r.text.slice(0, 300) };
+}
+
+async function deleteFace(employeeNo) {
+  if (dryRun) return { ok: true, dry: true };
+  const payload = JSON.stringify({
+    FPID: [{ value: String(employeeNo) }],
+    faceLibType: "blackFD",
+    FDID,
+  });
   const r = await api(
-    "POST",
-    "/ISAPI/AccessControl/UserInfo/Record?format=json",
-    JSON.stringify(payload),
+    "PUT",
+    "/ISAPI/Intelligent/FDLib/FDSearch/Delete?format=json",
+    payload,
     "application/json"
   );
-  return { ok: okResponse(r), detail: r.text.slice(0, 300) };
+  const sub = r.json?.subStatusCode || "";
+  const ok = okResponse(r) || sub === "NoFace" || sub === "faceLibNotExist";
+  return { ok, detail: r.text.slice(0, 300) };
 }
 
 async function uploadFace(employeeNo, jpegBuf) {
@@ -165,13 +185,18 @@ async function main() {
     const exists = existingNos.has(employeeNo);
     console.log(`\n→ ${name} (${employeeNo})${exists ? " [yangilash]" : " [yangi]"}`);
 
-    const userRes = await upsertUser(employeeNo, name);
+    const userRes = await upsertUser(employeeNo, name, exists);
     if (!userRes.ok) {
       results.push({ name, employeeNo, ok: false, step: "user", detail: userRes.detail });
       console.log("  ❌ user:", userRes.detail);
       continue;
     }
     console.log("  ✓ user");
+
+    if (exists) {
+      const del = await deleteFace(employeeNo);
+      console.log(del.ok ? "  ✓ eski yuz o'chirildi" : "  ⚠ yuz o'chirish:", del.detail.slice(0, 80));
+    }
 
     const jpeg = await resizeJpeg(facePath);
     const faceRes = await uploadFace(employeeNo, jpeg);
