@@ -82,6 +82,7 @@ async function main() {
     variables: {
       ATTENDANCE_TO_GROUP: "1",
       EXTRA_GROUP_IDS: "-5351426801",
+      LATE_GRACE_MIN: "0",
     },
   });
   console.log("Face ID env: keldi/ketdi guruhlari yangilandi");
@@ -97,7 +98,7 @@ async function main() {
         TELEGRAM_POLL: "1",
         DATABASE_DIR: "/data",
         TZ: "Asia/Tashkent",
-        LATE_GRACE_MIN: "5",
+        LATE_GRACE_MIN: "0",
       },
     });
     console.log("Face ID env: hub OK");
