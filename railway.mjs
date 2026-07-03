@@ -75,14 +75,17 @@ function mergeBundledEmployees() {
   dest.staff ||= {};
   for (const [key, s] of Object.entries(src.staff || {})) {
     dest.staff[key] = { ...(dest.staff[key] || {}), ...s };
-    for (const f of ["shiftStart", "shiftHours", "firstName", "lastName", "deviceName", "telegramId", "photoFile", "noShift"]) {
+    for (const f of ["shiftStart", "shiftHours", "firstName", "lastName", "deviceName", "telegramId", "photoFile"]) {
       if (s[f] != null) dest.staff[key][f] = s[f];
     }
-    delete dest.staff[key].shiftVariable;
-    if (dest.staff[key].noShift) {
+    if (s.noShift === true) {
+      dest.staff[key].noShift = true;
       delete dest.staff[key].shiftStart;
       delete dest.staff[key].shiftHours;
+    } else {
+      delete dest.staff[key].noShift;
     }
+    delete dest.staff[key].shiftVariable;
   }
   fs.writeFileSync(destEmp, JSON.stringify(dest, null, 2));
 }
@@ -183,7 +186,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     return res.end(
-      `face-id-bot ok v1.13.2\nkeldi/ketdi: ${attendanceRouteLabel(ctx)}\n${hubStatusLabel()}\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+      `face-id-bot ok v1.13.3\nkeldi/ketdi: ${attendanceRouteLabel(ctx)}\n${hubStatusLabel()}\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
     );
   }
   if (req.method === "GET" && req.url === "/shifts") {
@@ -215,6 +218,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(
-    `Railway v1.13.2 | keldi/ketdi: ${attendanceRouteLabel(ctx)} | ${hubStatusLabel()} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+    `Railway v1.13.3 | keldi/ketdi: ${attendanceRouteLabel(ctx)} | ${hubStatusLabel()} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
   );
 });
