@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { loadEmployees } from "./lib/attendance-core.mjs";
 import { initDb, syncStaffNamesFromEmployees } from "./lib/db.mjs";
+import { initAttendanceLogSchema, restoreAllAttendanceData } from "./lib/attendance-log.mjs";
 import { handleFaceEvent } from "./lib/process-event.mjs";
 import { getPollWatermarkMs } from "./lib/poll-watermark.mjs";
 import { listAllShifts } from "./lib/shifts.mjs";
@@ -105,9 +106,19 @@ function ensureBundledData() {
 const persist = bootstrapPersistence(DATA_DIR, BUNDLED_DIR);
 ensureBundledData();
 initDb(DATA_DIR);
+initAttendanceLogSchema();
 const employees = loadEmployees(DATA_DIR);
 const nameSync = syncStaffNamesFromEmployees(employees);
 if (nameSync) console.log(`Staff names synced in DB: ${nameSync} row(s)`);
+
+try {
+  const restored = restoreAllAttendanceData(employees);
+  if (restored.fromLog || restored.fromState) {
+    console.log(`Attendance restore: log=${restored.fromLog} state=${restored.fromState}`);
+  }
+} catch (e) {
+  console.warn("Attendance restore:", e.message);
+}
 
 const ctx = {
   botToken: BOT_TOKEN,
@@ -172,7 +183,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     return res.end(
-      `face-id-bot ok v1.12.3\nkeldi/ketdi: ${attendanceRouteLabel(ctx)}\n${hubStatusLabel()}\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+      `face-id-bot ok v1.13.0\nkeldi/ketdi: ${attendanceRouteLabel(ctx)}\n${hubStatusLabel()}\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
     );
   }
   if (req.method === "GET" && req.url === "/shifts") {
@@ -204,6 +215,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(
-    `Railway v1.12.3 | keldi/ketdi: ${attendanceRouteLabel(ctx)} | ${hubStatusLabel()} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+    `Railway v1.13.0 | keldi/ketdi: ${attendanceRouteLabel(ctx)} | ${hubStatusLabel()} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
   );
 });
