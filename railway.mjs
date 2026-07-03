@@ -172,7 +172,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (req.url === "/" || req.url === "/health")) {
     res.writeHead(200, { "Content-Type": "text/plain; charset=utf-8" });
     return res.end(
-      `face-id-bot ok v1.11.0\nkeldi/ketdi: ${attendanceRouteLabel(ctx)}\n${hubStatusLabel()}\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+      `face-id-bot ok v1.11.1\nkeldi/ketdi: ${attendanceRouteLabel(ctx)}\n${hubStatusLabel()}\n${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
     );
   }
   if (req.method === "GET" && req.url === "/shifts") {
@@ -204,6 +204,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(
-    `Railway v1.11.0 | keldi/ketdi: ${attendanceRouteLabel(ctx)} | ${hubStatusLabel()} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
+    `Railway v1.11.1 | keldi/ketdi: ${attendanceRouteLabel(ctx)} | ${hubStatusLabel()} | ${persistenceStatusLine(DATA_DIR, persist.dbPath)}`
   );
 });
