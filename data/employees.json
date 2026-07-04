@@ -119,7 +119,5 @@
       "faceRegistered": true,
       "photoFile": "faces/7703650930.jpg",
       "shiftStart": "09:00",
-      "shiftHours": 12
-    }
-  }
-}
+      "shiftHours": 12,
+      "monthlySalary": 5300000
