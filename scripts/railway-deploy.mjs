@@ -94,6 +94,7 @@ async function main() {
         YORDAMCHI_HUB_URL: hubUrl,
         YORDAMCHI_HUB_SECRET: hubSecret,
         POINTS_ENABLED: "1",
+        POINTS_OVERTIME_BONUS: "1",
         POINTS_DAILY_PENALTY_CAP: "0",
         TELEGRAM_POLL: "1",
         DATABASE_DIR: "/data",
