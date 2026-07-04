@@ -8,7 +8,8 @@
       "faceRegistered": true,
       "photoFile": "faces/1.jpg",
       "shiftStart": "09:00",
-      "shiftHours": 12
+      "shiftHours": 12,
+      "attendanceGroupId": "-5351426801"
     },
     "924612402": {
       "firstName": "Ozodbek",
