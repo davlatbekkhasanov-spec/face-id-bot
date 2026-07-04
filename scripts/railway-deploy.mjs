@@ -99,7 +99,7 @@ async function main() {
         TELEGRAM_POLL: "1",
         DATABASE_DIR: "/data",
         TZ: "Asia/Tashkent",
-        LATE_GRACE_MIN: "0",
+        ABSENCE_ALERT_HOURS: "2",
       },
     });
     console.log("Face ID env: hub OK");
