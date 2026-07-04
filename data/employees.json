@@ -9,7 +9,8 @@
       "photoFile": "faces/1.jpg",
       "shiftStart": "09:00",
       "shiftHours": 12,
-      "attendanceGroupId": "-5351426801"
+      "attendanceGroupId": "-5351426801",
+      "monthlySalary": 8000000
     },
     "924612402": {
       "firstName": "Ozodbek",
@@ -19,7 +20,8 @@
       "faceRegistered": true,
       "photoFile": "faces/924612402.jpg",
       "shiftStart": "09:00",
-      "shiftHours": 12
+      "shiftHours": 12,
+      "monthlySalary": 3300000
     },
     "5412958249": {
       "firstName": "Oxunjon",
@@ -29,7 +31,8 @@
       "faceRegistered": true,
       "photoFile": "faces/5412958249.jpg",
       "shiftStart": "07:30",
-      "shiftHours": 12
+      "shiftHours": 12,
+      "monthlySalary": 5700000
     },
     "8547365654": {
       "firstName": "Sindor",
@@ -39,7 +42,8 @@
       "faceRegistered": true,
       "photoFile": "faces/8547365654.jpg",
       "shiftStart": "09:00",
-      "shiftHours": 12
+      "shiftHours": 12,
+      "monthlySalary": 4800000
     },
     "6931958983": {
       "firstName": "Abdullo",
@@ -49,7 +53,8 @@
       "faceRegistered": true,
       "photoFile": "faces/6931958983.jpg",
       "shiftStart": "09:00",
-      "shiftHours": 12
+      "shiftHours": 12,
+      "monthlySalary": 4800000
     },
     "6991673998": {
       "firstName": "Yunus",
@@ -59,7 +64,8 @@
       "faceRegistered": true,
       "photoFile": "faces/6991673998.jpg",
       "shiftStart": "07:30",
-      "shiftHours": 12
+      "shiftHours": 12,
+      "monthlySalary": 6700000
     },
     "5465963344": {
       "firstName": "Tolib",
@@ -69,7 +75,8 @@
       "faceRegistered": true,
       "photoFile": "faces/5465963344.jpg",
       "shiftStart": "07:30",
-      "shiftHours": 12
+      "shiftHours": 12,
+      "monthlySalary": 5000000
     },
     "6001619806": {
       "firstName": "Tulqin",
@@ -79,7 +86,8 @@
       "faceRegistered": true,
       "photoFile": "faces/6001619806.jpg",
       "shiftStart": "07:30",
-      "shiftHours": 12
+      "shiftHours": 12,
+      "monthlySalary": 5700000
     },
     "5732350707": {
       "firstName": "Muslimbek",
@@ -89,7 +97,8 @@
       "faceRegistered": true,
       "photoFile": "faces/5732350707.jpg",
       "shiftStart": "10:00",
-      "shiftHours": 12
+      "shiftHours": 12,
+      "monthlySalary": 5500000
     },
     "8440127425": {
       "firstName": "Ziyodullo",
@@ -99,7 +108,8 @@
       "faceRegistered": true,
       "photoFile": "faces/8440127425.jpg",
       "shiftStart": "10:00",
-      "shiftHours": 12
+      "shiftHours": 12,
+      "monthlySalary": 5300000
     },
     "7703650930": {
       "firstName": "Farrux",
