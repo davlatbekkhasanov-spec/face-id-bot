@@ -13,6 +13,7 @@ import { getPollWatermarkMs } from "./lib/poll-watermark.mjs";
 import { listAllShifts } from "./lib/shifts.mjs";
 import { bootstrapPersistence, persistenceStatusLine, resolveDataDir } from "./lib/persist-data.mjs";
 import { startTelegramPoll } from "./lib/telegram-poll.mjs";
+import { ensureTelegramPolling } from "./lib/telegram-webhook.mjs";
 import { parseAdminIds } from "./lib/access.mjs";
 import { parseAdminDmId, parseAttendanceGroupIds, attendanceRouteLabel } from "./lib/chats.mjs";
 import { syncTodayPointsToHub, hubConfigured, hubStatusLabel } from "./lib/yordamchi-push.mjs";
@@ -137,6 +138,9 @@ const ctx = {
 
 const enablePoll = process.env.TELEGRAM_POLL !== "0";
 if (enablePoll) {
+  await ensureTelegramPolling(BOT_TOKEN).catch((e) =>
+    console.error("Telegram webhook tozalash xato:", e.message)
+  );
   startTelegramPoll(ctx);
 } else {
   console.log("Telegram poll o'chirilgan (TELEGRAM_POLL=0)");
