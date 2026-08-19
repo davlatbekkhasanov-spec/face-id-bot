@@ -12,13 +12,13 @@
       "attendanceGroupId": "-5351426801",
       "monthlySalary": 8000000
     },
-    "924612402": {
-      "firstName": "Ozodbek",
-      "lastName": "Ergashev",
-      "deviceName": "ERGASHEV OZODBEK",
-      "telegramId": 7844168817,
+    "6706402440": {
+      "firstName": "Shoxijaxon",
+      "lastName": "Ibodullaev",
+      "deviceName": "IBODULLAEV SHOXIJAXON",
+      "telegramId": 6706402440,
       "faceRegistered": true,
-      "photoFile": "faces/924612402.jpg",
+      "photoFile": "faces/6706402440.jpg",
       "shiftStart": "09:00",
       "shiftHours": 12,
       "monthlySalary": 3300000
@@ -111,13 +111,13 @@
       "shiftHours": 12,
       "monthlySalary": 5300000
     },
-    "7703650930": {
-      "firstName": "Farrux",
-      "lastName": "Tuvalov",
-      "deviceName": "TUVALOV FARRUX",
-      "telegramId": 7703650930,
+    "7987730795": {
+      "firstName": "Pulat",
+      "lastName": "Rajabboev",
+      "deviceName": "RAJABBOEV PULAT",
+      "telegramId": 7987730795,
       "faceRegistered": true,
-      "photoFile": "faces/7703650930.jpg",
+      "photoFile": "faces/7987730795.jpg",
       "shiftStart": "09:00",
       "shiftHours": 12,
       "monthlySalary": 5300000
