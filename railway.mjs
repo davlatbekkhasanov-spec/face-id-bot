@@ -74,20 +74,23 @@ function mergeBundledEmployees() {
     } catch { /* yangi */ }
   }
   dest.staff ||= {};
+  const prev = dest.staff;
+  const next = {};
   for (const [key, s] of Object.entries(src.staff || {})) {
-    dest.staff[key] = { ...(dest.staff[key] || {}), ...s };
+    next[key] = { ...(prev[key] || {}), ...s };
     for (const f of ["shiftStart", "shiftHours", "firstName", "lastName", "deviceName", "telegramId", "photoFile", "attendanceGroupId", "attendanceGroupIds"]) {
-      if (s[f] != null) dest.staff[key][f] = s[f];
+      if (s[f] != null) next[key][f] = s[f];
     }
     if (s.noShift === true) {
-      dest.staff[key].noShift = true;
-      delete dest.staff[key].shiftStart;
-      delete dest.staff[key].shiftHours;
+      next[key].noShift = true;
+      delete next[key].shiftStart;
+      delete next[key].shiftHours;
     } else {
-      delete dest.staff[key].noShift;
+      delete next[key].noShift;
     }
-    delete dest.staff[key].shiftVariable;
+    delete next[key].shiftVariable;
   }
+  dest.staff = next;
   fs.writeFileSync(destEmp, JSON.stringify(dest, null, 2));
 }
 
