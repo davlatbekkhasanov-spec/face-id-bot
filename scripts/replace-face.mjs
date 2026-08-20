@@ -14,7 +14,7 @@ for (const line of fs.readFileSync(path.join(root, ".env"), "utf8").split(/\r?\n
 
 const ip = process.env.FACE_DEVICE_IP;
 const pass = process.env.FACE_DEVICE_PASSWORD;
-const only = process.argv.find((a) => a.startsWith("--only="))?.split("=")[1] || "924612402";
+const only = process.argv.find((a) => a.startsWith("--only="))?.split("=")[1] || "6706402440";
 const client = new DigestFetch(process.env.FACE_DEVICE_USER || "admin", pass);
 const FDID = "1";
 
